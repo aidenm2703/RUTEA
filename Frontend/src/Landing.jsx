@@ -36,7 +36,7 @@ export default function Landing({ onLogin, onExplore }) {
     <div className={onLogin ? 'shell landing-content' : 'landing-content'}>
       {onLogin && <section id="acceso" className="landing-access">
         <div><h2>Entra a tu bitácora</h2><p>Con tu cuenta puedes explorar el catálogo, consultar el glosario y los agentes, y registrar tus visitas.</p></div>
-        <Account key={register ? 'registro' : 'login'} initialRegister={register} onLogin={onLogin} />
+        <Account register={register} setRegister={setRegister} onLogin={onLogin} />
       </section>}
       <section className="landing-section">
         <div className="landing-section-heading"><h2>Postales de Costa Rica</h2><ArrowDown aria-hidden="true" /></div>
@@ -46,7 +46,14 @@ export default function Landing({ onLogin, onExplore }) {
         <h2>Naturaleza y museos</h2>
         <div className="landing-films">
           <Film id="cBJLARQbPeY" title="Río Celeste" photo={photos.volcano} publisher="My Costa Rica" />
-          <Film id="0ci8S_0Dz9o" title="Ruta de museos de San José" photo={photos.national} publisher="Museo Nacional de Costa Rica" />
+          <article className="landing-film">
+            <video src="/media/museos.webm" poster={photos.national.src} controls loop muted playsInline preload="none"
+              aria-label="Montaje de fotografías del Museo Nacional y Museo del Jade" />
+            <h3>Museos de San José</h3>
+            <p>Montaje de fotografías del Museo Nacional y el Museo del Jade.</p>
+            <PhotoCredit photo={photos.national} /><PhotoCredit photo={photos.jade} />
+            <p className="photo-credit">Encuadres adaptados · <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank" rel="noreferrer">Licencia del montaje</a></p>
+          </article>
         </div>
       </section>
     </div>

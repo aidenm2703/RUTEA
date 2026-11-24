@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { ArrowUpRight, MapPin } from 'lucide-react'
+import { ArrowUpRight, Camera, MapPin } from 'lucide-react'
 import { accessibilityLabels, categories, cuisineLabel, directionsUrl, menuLabels, serviceLabels } from './utils/catalog-filters'
+import { catalogPhoto } from './media'
+import { api } from './services/api'
 
 function MiniMap({ latitude, longitude, name }) {
   const [open, setOpen] = useState(false)
@@ -15,7 +17,48 @@ function MiniMap({ latitude, longitude, name }) {
   </>
 }
 
-export default function PlaceCard({ place, canton, onVisit }) {
+function PlacePhoto({ place, token }) {
+  const original = catalogPhoto(place)
+  const [photo, setPhoto] = useState(null)
+  const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [unavailable, setUnavailable] = useState(false)
+
+  async function loadPhoto() {
+    setBusy(true)
+    setStatus('')
+    try {
+      const result = await api(`google-places/catalog-photo/${encodeURIComponent(place.slug)}`, { token })
+      setPhoto(result.photo)
+      if (!result.photo) { setUnavailable(true); setStatus('No hay una foto confirmada para este lugar.') }
+    } catch (error) {
+      setStatus(error.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (original) return <figure className="place-photo">
+    <img src={original.src} alt={original.title} loading="lazy" />
+    <figcaption><a href={original.source} target="_blank" rel="noreferrer">{original.author}</a>
+      {' · '}<a href={original.license} target="_blank" rel="noreferrer">Creative Commons</a></figcaption>
+  </figure>
+  if (photo) return <figure className="place-photo">
+    <img src={photo.url} alt={`Foto de ${place.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => {
+      setPhoto(null); setStatus('La foto dejó de estar disponible. Puedes consultarla de nuevo.')
+    }} />
+    <figcaption>Google Maps{photo.authors.map((author, index) => <span key={author.uri ?? index}>
+      {' · '}{author.uri?.startsWith('https://') ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}
+    </span>)}</figcaption>
+  </figure>
+  return <div className={`place-photo-placeholder place-photo-${place.category}`}>
+    <Camera size={24} aria-hidden="true" />
+    {!unavailable && <button className="secondary" onClick={loadPhoto} disabled={busy}>{busy ? 'Buscando foto…' : 'Buscar foto del lugar'}</button>}
+    {status && <p role="status">{status}</p>}
+  </div>
+}
+
+export default function PlaceCard({ place, token, canton, onVisit }) {
   const hasCoordinates = place.latitude != null && place.longitude != null
     && Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude))
   const destination = hasCoordinates ? `${place.latitude},${place.longitude}`
@@ -24,6 +67,7 @@ export default function PlaceCard({ place, canton, onVisit }) {
   const featureLabels = place.accessibility_features?.map((key) => accessibilityLabels[key]).filter(Boolean) ?? []
   const services = place.services?.map((key) => serviceLabels[key]).filter(Boolean) ?? []
   return <article className="place-card panel">
+    <PlacePhoto place={place} token={token} />
     <p className="eyebrow"><MapPin size={14} aria-hidden="true" />
       {[place.province, canton, place.subtype || categories[place.category]].filter(Boolean).join(' · ')}
     </p>

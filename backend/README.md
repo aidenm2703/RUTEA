@@ -4,6 +4,8 @@ Ejecuta `npm ci` en `backend`. Copia `.env.example` a `.env` y configura `DATABA
 
 El catálogo de RUTEA se instaló en el esquema privado `rutea`. Para reproducirlo en otra base vacía, aplica `database/catalogo-schema.sql` y después `database/catalogo-seed.sql`. La aplicación de producción debe usar un rol PostgreSQL de lectura con acceso al esquema y políticas de lectura del catálogo.
 
+La portada **Qué es RUTEA** es pública. Las rutas del catálogo, Google Places, el pasaporte y los agentes requieren una sesión válida mediante `Authorization: Bearer <accessToken>`.
+
 | Ruta GET | Contenido |
 | --- | --- |
 | `/health` | Estado del proceso |
@@ -61,6 +63,7 @@ Agrega `GOOGLE_PLACES_API_KEY` al entorno de Express y reinicia el backend. En G
 | `GET /api/google-places/status` | Indica si hay una llave configurada. |
 | `POST /api/google-places/search` | `query`, texto para buscar en Costa Rica. |
 | `GET /api/google-places/:id` | Ficha, reseñas destacadas y foto disponible con atribución. |
+| `GET /api/google-places/catalog-photo/:slug` | Busca una foto bajo demanda para una ficha del catálogo. Exige coincidencia única de nombre y localidad. |
 
 La interfaz diferencia estos resultados del catálogo de RUTEA. El backend mantiene la llave en el servidor y entrega el contenido de Google con `Cache-Control: no-store`. La integración consulta el servicio en vivo y respeta las [reglas de atribución de Google Maps](https://developers.google.com/maps/documentation/places/web-service/policies).
 

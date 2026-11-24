@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { api } from './services/api'
 
-export default function Account({ onLogin, initialRegister = false }) {
-  const [register, setRegister] = useState(initialRegister)
+export default function Account({ onLogin, register, setRegister }) {
   const [feedback, setFeedback] = useState('')
   const [busy, setBusy] = useState(false)
 
