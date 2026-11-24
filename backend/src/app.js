@@ -3,13 +3,15 @@ const { createCatalogRouter } = require('./routes/catalog.routes');
 const { createAuthRouter, createAuthentication } = require('./routes/auth.routes');
 const { createPassportRouter } = require('./routes/passport.routes');
 const { createAgentsRouter } = require('./routes/agents.routes');
+const { createGooglePlacesRouter } = require('./routes/google-places.routes');
 
-function createApp(database, { jwtSecret, allowRegistration = false, gemini } = {}) {
+function createApp(database, { jwtSecret, allowRegistration = false, gemini, googlePlacesKey } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '16kb' }));
   app.get('/health', (_request, response) => response.json({ status: 'ok' }));
   app.use('/api/catalog', createCatalogRouter(database));
+  app.use('/api/google-places', createGooglePlacesRouter(googlePlacesKey));
   let authenticate;
   if (jwtSecret) {
     if (Buffer.byteLength(jwtSecret) < 32) throw new Error('JWT_SECRET debe tener al menos 32 bytes');

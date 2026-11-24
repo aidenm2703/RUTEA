@@ -3,6 +3,7 @@ import { ArrowUpRight, Compass, MapPin, Search } from 'lucide-react'
 import { api } from './services/api'
 import Passport from './Passport'
 import Agents from './Agents'
+import GooglePlaces from './GooglePlaces'
 import logo from './assets/rutea-logo.svg'
 import { accessibilityLabels, categories, cuisineLabel, filterPlaces, menuLabels } from './utils/catalog-filters'
 import './App.css'
@@ -18,6 +19,7 @@ export default function App() {
   const [filters, setFilters] = useState(emptyFilters)
   const [limit, setLimit] = useState(pageSize)
   const [destination, setDestination] = useState('')
+  const [showGoogle, setShowGoogle] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -145,7 +147,14 @@ export default function App() {
             {currentProvince && <aside className="field-note"><strong>Dato de {currentProvince.name}</strong>
               <p>{currentProvince.curiosity}</p><a href={currentProvince.source_url} target="_blank" rel="noreferrer">Consultar fuente <ArrowUpRight size={14} /></a>
             </aside>}
-            <div className="section-title"><h2>Lugares para descubrir</h2><span role="status">{visiblePlaces.length} {visiblePlaces.length === 1 ? 'lugar' : 'lugares'}</span></div>
+            <div className="section-title"><h2>Lugares para descubrir</h2><span role="status">{visiblePlaces.length} {visiblePlaces.length === 1 ? 'lugar' : 'lugares'}</span>
+              <button className="secondary" aria-expanded={showGoogle} onClick={() => setShowGoogle((visible) => !visible)}>
+                {showGoogle ? 'Cerrar búsqueda en Google' : 'Buscar también en Google'}
+              </button>
+            </div>
+            {showGoogle && <GooglePlaces initialQuery={search || [
+              cuisine ? `comida ${cuisineLabel(cuisine)}` : categories[category], cantonNames.get(Number(canton)), currentProvince?.name,
+            ].filter(Boolean).join(' ')} />}
             {visiblePlaces.length === 0 && <p>El catálogo aún no tiene lugares que cumplan todos estos filtros.</p>}
             <div className="card-grid">{visiblePlaces.slice(0, limit).map((place) => (
               <article className="place-card panel" key={place.slug}>

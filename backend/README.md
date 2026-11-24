@@ -50,6 +50,18 @@ Configura `GEMINI_API_KEY` y `GEMINI_MODEL` con un modelo que tenga habilitado `
 | Recuerdos | `recuerdos` | Redacta un diario con notas y visitas del titular. |
 | Privacidad | `privacidad` | Revisa textos de ejemplo para auditores y administradores. |
 
+## Búsqueda en Google Maps
+
+Agrega `GOOGLE_PLACES_API_KEY` al entorno de Express y reinicia el backend. En Google Cloud, habilita únicamente **Places API (New)** para esa llave y configura las cuotas del proyecto. La interfaz envía búsquedas cuando la persona pulsa el botón y pide los detalles y una foto al abrir una ficha. La primera búsqueda utiliza hasta ocho resultados.
+
+| Método y ruta | Datos |
+| --- | --- |
+| `GET /api/google-places/status` | Indica si hay una llave configurada. |
+| `POST /api/google-places/search` | `query`, texto para buscar en Costa Rica. |
+| `GET /api/google-places/:id` | Ficha, reseñas destacadas y foto disponible con atribución. |
+
+La interfaz diferencia estos resultados del catálogo de RUTEA. El backend mantiene la llave en el servidor y entrega el contenido de Google con `Cache-Control: no-store`. La integración consulta el servicio en vivo y respeta las [reglas de atribución de Google Maps](https://developers.google.com/maps/documentation/places/web-service/policies).
+
 ## Siguiente alcance
 
 1. Completar cuentas y roles con verificación y recuperación por correo, y consentimiento versionado.

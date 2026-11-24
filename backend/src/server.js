@@ -20,5 +20,6 @@ const port = process.env.PORT || 3000;
 createApp(database, {
   jwtSecret: process.env.JWT_SECRET,
   allowRegistration: process.env.ALLOW_DEMO_REGISTRATION === 'true',
+  googlePlacesKey: process.env.GOOGLE_PLACES_API_KEY,
   gemini: { key: process.env.GEMINI_API_KEY, model: process.env.GEMINI_MODEL },
 }).listen(port, () => console.log(`API RUTEA en puerto ${port}`));

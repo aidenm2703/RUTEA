@@ -42,6 +42,13 @@ input, select { min-width: 0; width: 100%; padding: .6rem .7rem; color: #193e37;
 .access-filters input { width: 1rem; height: 1rem; accent-color: #1d5947; }
 .place-access, .osm-attribution { font-size: .85rem; color: #3c6753; }
 .load-more, .osm-attribution { margin-top: 16px; }
+.google-results { margin: 12px 0 20px; }
+.google-attribution { font-size: .82rem; color: #4c5651; font-weight: 700; }
+.google-list { list-style: none; padding: 0; display: grid; gap: 10px; }
+.google-list li, .google-details { padding: 12px; border: 1px solid #e4d8c4; border-radius: 6px; overflow-wrap: anywhere; }
+.google-details { margin-top: 12px; }
+.google-details figure { margin: 12px 0; }
+.google-details img { display: block; max-width: min(100%, 480px); height: auto; border-radius: 6px; }
 .agent-layout { display: grid; gap: 16px; }
 .agent-card [aria-pressed="true"] { background: #c5dcb5; }
 .agent-answer { white-space: pre-wrap; overflow-wrap: anywhere; }
