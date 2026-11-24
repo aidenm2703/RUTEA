@@ -17,4 +17,7 @@ database.on('error', (error) => {
 });
 
 const port = process.env.PORT || 3000;
-createApp(database).listen(port, () => console.log(`API RUTEA en puerto ${port}`));
+createApp(database, {
+  jwtSecret: process.env.JWT_SECRET,
+  allowRegistration: process.env.ALLOW_DEMO_REGISTRATION === 'true',
+}).listen(port, () => console.log(`API RUTEA en puerto ${port}`));
