@@ -4,22 +4,19 @@ import { api } from './services/api'
 import Passport from './Passport'
 import Agents from './Agents'
 import logo from './assets/rutea-logo.svg'
+import { accessibilityLabels, categories, cuisineLabel, filterPlaces, menuLabels } from './utils/catalog-filters'
 import './App.css'
 
-const normalize = (value) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-const categories = { nature: 'Naturaleza', culture: 'Cultura', restaurant: 'Restaurantes' }
-const menuLabels = { fully_vegan: '100 % vegano', vegan_options: 'Opciones veganas' }
+const emptyFilters = { province: '', canton: '', category: '', diet: '', cuisine: '', search: '', accessibility: [] }
+const pageSize = 24
 
 export default function App() {
   const [view, setView] = useState('inicio')
   const [token, setToken] = useState(() => sessionStorage.getItem('rutea-session') ?? '')
   const [catalog, setCatalog] = useState({ loading: true, provinces: [], cantons: [], glossary: [] })
   const [retry, setRetry] = useState(0)
-  const [province, setProvince] = useState('')
-  const [canton, setCanton] = useState('')
-  const [category, setCategory] = useState('')
-  const [diet, setDiet] = useState('')
-  const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState(emptyFilters)
+  const [limit, setLimit] = useState(pageSize)
   const [destination, setDestination] = useState('')
 
   useEffect(() => {
@@ -53,22 +50,17 @@ export default function App() {
 
   const places = catalog.provinces.flatMap((item) => item.places.map((place) => ({ ...place, province: item.name })))
   const cantonNames = new Map(catalog.cantons.map(({ code, name }) => [code, name]))
-  const words = normalize(search).match(/[a-z0-9]+/g) ?? []
-  const asksVegan = words.some((word) => /^vegan[oa]s?$/.test(word))
-  const asksRestaurant = words.some((word) => /^restaurantes?$/.test(word))
-  const requestedMenu = asksVegan && (words.includes('100') ? 'fully_vegan'
-    : words.some((word) => /^opcion(es)?$/.test(word)) ? 'vegan_options' : '')
-  const terms = words.filter((word) => !/^(restaurantes?|vegan[oa]s?|en|de|del|para|con)$/.test(word)
-    && !(asksVegan && /^(100|opcion(es)?)$/.test(word)))
-  const visiblePlaces = places.filter((item) => {
-    const searchable = normalize(`${item.name} ${item.province} ${cantonNames.get(item.canton_code) ?? ''} ${item.visit_notes} ${categories[item.category] ?? ''}`)
-    return (!province || item.province_slug === province) && (!canton || Number(canton) === item.canton_code)
-      && (!category || category === item.category) && (!asksRestaurant || item.category === 'restaurant')
-      && (!asksVegan || Boolean(item.vegan_menu)) && (!requestedMenu || item.vegan_menu === requestedMenu)
-      && (!diet || (diet === 'any_vegan' ? Boolean(item.vegan_menu) : item.vegan_menu === diet))
-      && terms.every((term) => searchable.includes(term))
-  })
+  const { province, canton, category, diet, cuisine, search, accessibility } = filters
+  const cuisines = [...new Set(places.flatMap((item) => item.cuisine_codes ?? []))]
+    .sort((a, b) => cuisineLabel(a).localeCompare(cuisineLabel(b), 'es'))
+  const visiblePlaces = filterPlaces(places, cantonNames, filters)
+  const filtered = Boolean(province || canton || category || diet || cuisine || search || accessibility.length)
   const currentProvince = catalog.provinces.find((item) => item.slug === province)
+
+  function changeFilters(updates) {
+    setFilters((current) => ({ ...current, ...updates }))
+    setLimit(pageSize)
+  }
   const catalogStatus = catalog.loading ? <p role="status">Cargando el catálogo…</p> : catalog.error ? (
     <div className="panel" role="alert"><p>{catalog.error}</p><button onClick={() => {
       setCatalog((previous) => ({ ...previous, loading: true, error: '' }))
@@ -113,41 +105,67 @@ export default function App() {
           {catalogStatus ?? <>
             <section className="filter-bar" aria-label="Filtros del catálogo">
               <label className="search-field"><Search size={19} aria-hidden="true" />
-                <input aria-label="Buscar lugares" placeholder="Ej. restaurantes veganos en Heredia" value={search} onChange={(event) => setSearch(event.target.value)} />
+                <input aria-label="Buscar lugares" placeholder="Ej. comida coreana en Heredia" value={search} onChange={(event) => changeFilters({ search: event.target.value })} />
               </label>
               <label className="province-field">Provincia
-                <select value={province} onChange={(event) => { setProvince(event.target.value); setCanton('') }}>
+                <select value={province} onChange={(event) => changeFilters({ province: event.target.value, canton: '' })}>
                   <option value="">Todas las provincias</option>
                   {catalog.provinces.map((item) => <option value={item.slug} key={item.slug}>{item.name}</option>)}
                 </select>
               </label>
-              <label className="province-field">Cantón<select value={canton} disabled={!province} onChange={(event) => setCanton(event.target.value)}>
+              <label className="province-field">Cantón<select value={canton} disabled={!province} onChange={(event) => changeFilters({ canton: event.target.value })}>
                 <option value="">Todos los cantones</option>{catalog.cantons.filter((item) => item.province_slug === province).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
               </select></label>
-              <label className="province-field">Tipo de lugar<select value={category} onChange={(event) => { setCategory(event.target.value); if (event.target.value !== 'restaurant') setDiet('') }}>
+              <label className="province-field">Tipo de lugar<select value={category} onChange={(event) => {
+                const next = event.target.value
+                changeFilters({ category: next, ...(next && next !== 'restaurant' ? { diet: '', cuisine: '' } : {}) })
+              }}>
                 <option value="">Todos los tipos</option>{Object.entries(categories).map(([key, name]) => <option key={key} value={key}>{name}</option>)}
               </select></label>
-              {(!category || category === 'restaurant') && <label className="province-field">Menú<select value={diet} onChange={(event) => setDiet(event.target.value)}>
-                <option value="">Cualquier menú</option><option value="fully_vegan">Solo 100 % vegano</option><option value="vegan_options">Con opciones veganas</option><option value="any_vegan">Ambos tipos</option>
-              </select></label>}
-              {(search || province || canton || category || diet) && <button className="secondary" onClick={() => { setSearch(''); setProvince(''); setCanton(''); setCategory(''); setDiet('') }}>Limpiar filtros</button>}
+              {(!category || category === 'restaurant') && <>
+                <label className="province-field">Menú<select value={diet} onChange={(event) => changeFilters({ diet: event.target.value })}>
+                  <option value="">Cualquier menú</option><option value="fully_vegan">Solo 100 % vegano</option>
+                  <option value="vegan_options">Con opciones veganas</option><option value="any_vegan">Cualquier opción vegana</option>
+                  <option value="vegetarian">Con opciones vegetarianas</option>
+                </select></label>
+                <label className="province-field">Cocina<select value={cuisine} onChange={(event) => changeFilters({ cuisine: event.target.value })}>
+                  <option value="">Todas las cocinas</option>
+                  {cuisines.map((code) => <option key={code} value={code}>{cuisineLabel(code)}</option>)}
+                </select></label>
+              </>}
+              {filtered && <button className="secondary" onClick={() => changeFilters(emptyFilters)}>Limpiar filtros</button>}
             </section>
+            <fieldset className="access-filters"><legend>Accesibilidad</legend>
+              {Object.entries(accessibilityLabels).map(([key, label]) => <label key={key}>
+                <input type="checkbox" checked={accessibility.includes(key)} onChange={(event) => changeFilters({
+                  accessibility: event.target.checked ? [...accessibility, key] : accessibility.filter((feature) => feature !== key),
+                })} /> {label}
+              </label>)}
+            </fieldset>
             {currentProvince && <aside className="field-note"><strong>Dato de {currentProvince.name}</strong>
               <p>{currentProvince.curiosity}</p><a href={currentProvince.source_url} target="_blank" rel="noreferrer">Consultar fuente <ArrowUpRight size={14} /></a>
             </aside>}
             <div className="section-title"><h2>Lugares para descubrir</h2><span role="status">{visiblePlaces.length} {visiblePlaces.length === 1 ? 'lugar' : 'lugares'}</span></div>
-            {visiblePlaces.length === 0 && <p>No encontramos lugares para esta búsqueda.</p>}
-            <div className="card-grid">{visiblePlaces.map((place) => (
+            {visiblePlaces.length === 0 && <p>El catálogo aún no tiene lugares que cumplan todos estos filtros.</p>}
+            <div className="card-grid">{visiblePlaces.slice(0, limit).map((place) => (
               <article className="place-card panel" key={place.slug}>
                 <p className="eyebrow"><MapPin size={14} aria-hidden="true" />{[place.province, cantonNames.get(place.canton_code), categories[place.category]].filter(Boolean).join(' · ')}</p>
                 <h3>{place.name}</h3><p>{place.visit_notes}</p>
                 {place.vegan_menu && <p className="menu-label">{menuLabels[place.vegan_menu]}</p>}
+                {place.vegetarian_options && !place.vegan_menu && <p className="menu-label">Opciones vegetarianas</p>}
+                {Boolean(place.cuisine_codes?.length) && <p>Cocina: {place.cuisine_codes.map(cuisineLabel).join(', ')}</p>}
+                <p className="place-access">Accesibilidad: {place.accessibility_features?.length
+                  ? place.accessibility_features.map((key) => accessibilityLabels[key]).join(', ')
+                  : 'Sin información disponible'}</p>
+                {place.evidence_kind === 'openstreetmap' && <p className="place-access">Datos comunitarios de OpenStreetMap</p>}
                 <details><summary>Ubicación, alojamiento y fuentes</summary><ul>
                   {place.links.map((link) => <li key={link.kind + link.url}><a href={link.url} target="_blank" rel="noreferrer">{link.label} <ArrowUpRight size={14} /></a></li>)}
                 </ul></details>
                 <button className="secondary" onClick={() => { setDestination(place.slug); navigate('pasaporte') }}>Registrar visita</button>
               </article>
             ))}</div>
+            {visiblePlaces.length > limit && <button className="secondary load-more" onClick={() => setLimit((count) => count + pageSize)}>Cargar más lugares</button>}
+            <p className="osm-attribution">Datos cartográficos © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">colaboradores de OpenStreetMap</a>.</p>
           </>}
         </>}
         {view === 'agentes' && <Agents token={token} provinces={catalog.provinces} openPassport={() => navigate('pasaporte')} />}

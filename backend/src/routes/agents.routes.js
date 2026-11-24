@@ -44,10 +44,12 @@ function createAgentsRouter(database, authenticate, gemini) {
         return { name: region.name, curiosity: region.curiosity };
       });
       context.places = placeMatches.sort((left, right) => right.score - left.score).slice(0, 12)
-        .map(({ place: { name, visit_notes, category, vegan_menu, canton_code, links }, region }) => {
+        .map(({ place: { name, visit_notes, category, vegan_menu, canton_code, links, cuisine_codes,
+          vegetarian_options, accessibility_features, evidence_kind }, region }) => {
           const link = links.find(({ kind }) => kind === 'official_site' || kind === 'source');
           if (link) sources.push({ label: name, url: link.url });
-          return { name, province: region, canton: cantons.get(canton_code), visit_notes, category, vegan_menu };
+          return { name, province: region, canton: cantons.get(canton_code), visit_notes, category, vegan_menu,
+            cuisine_codes, vegetarian_options, accessibility_features, evidence_kind };
         });
       context.glossary = [...terms.values()];
     }

@@ -1,0 +1,25 @@
+-- Contenido cartográfico © OpenStreetMap contributors, disponible bajo ODbL 1.0.
+-- https://www.openstreetmap.org/copyright — extracto nacional de Geofabrik.
+-- Fecha de extracción: @@DATE@@. Las etiquetas comunitarias pueden cambiar.
+with dataset (slug, canton_code, name, category, subtype, cuisine_codes, vegan_menu,
+  vegetarian, accessibility, osm_url) as (values
+@@ROWS@@
+), inserted as (
+  insert into rutea.places (
+    slug, province_slug, canton_code, name, visit_notes, reviewed_on, category, vegan_menu,
+    cuisine_codes, vegetarian_options, accessibility_features, evidence_kind
+  )
+  select dataset.slug, cantons.province_slug, dataset.canton_code, dataset.name, dataset.subtype,
+    date '@@DATE@@', dataset.category, dataset.vegan_menu, dataset.cuisine_codes,
+    case when dataset.vegetarian then true end, dataset.accessibility, 'openstreetmap'
+  from dataset join rutea.cantons cantons on cantons.code = dataset.canton_code
+  where not exists (
+    select 1 from rutea.places existing
+    where existing.canton_code = dataset.canton_code
+      and lower(existing.name) = lower(dataset.name)
+  )
+  returning slug
+)
+insert into rutea.place_links (place_slug, kind, label, url)
+select inserted.slug, 'source', 'Ver ubicación y datos en OpenStreetMap', dataset.osm_url
+from inserted join dataset using (slug);

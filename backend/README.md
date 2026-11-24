@@ -20,6 +20,10 @@ Después del esquema y el catálogo inicial, aplica `database/cantones.sql`, `da
 
 Después del pasaporte aplica `database/catalogo-filtros-agentes.sql`. Los lugares incluyen una categoría. El menú vegano distingue `fully_vegan` y `vegan_options`, con evidencia del operador enlazada en la ficha.
 
+Aplica después `database/catalogo-atributos.sql` y `database/catalogo-osm.sql` para las cocinas, opciones vegetarianas, accesibilidad y cobertura cantonal. Las fichas importadas conservan el enlace a la entidad de OpenStreetMap y muestran su procedencia comunitaria. La ausencia de una etiqueta representa información desconocida. Una etiqueta de acceso en silla de ruedas se registra por separado de una rampa.
+
+El archivo `database/catalogo-osm.sql` contiene datos de los colaboradores de OpenStreetMap bajo [ODbL 1.0](https://www.openstreetmap.org/copyright), extraídos de [Geofabrik](https://download.geofabrik.de/central-america/costa-rica.html). Para generar un extracto nuevo usa Python con `osmium` y `shapely`, el PBF de Costa Rica y `python database/importar_catalogo_osm.py <extracto.osm.pbf> <salida.sql> --snapshot-date AAAA-MM-DD`. El generador exige cobertura de los 84 cantones y asigna fichas mediante los límites cantonales de OpenStreetMap. Revisa el resultado antes de aplicarlo a una base existente.
+
 | Método y ruta | Datos |
 | --- | --- |
 | `POST /api/auth/register` | `displayName`, `email`, `password` en modo demo. |
