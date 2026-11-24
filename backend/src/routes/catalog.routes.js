@@ -1,8 +1,9 @@
 const { Router } = require('express');
-const { listProvinces, findProvince, listGlossary } = require('../repositories/catalog.repository');
+const { listProvinces, findProvince, listGlossary, listCantons } = require('../repositories/catalog.repository');
 
 function createCatalogRouter(database) {
   const router = Router();
+  router.get('/cantons', async (_request, response) => response.json(await listCantons(database)));
   router.get('/provinces', async (_request, response) => {
     response.json(await listProvinces(database));
   });

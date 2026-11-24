@@ -8,6 +8,11 @@ async function listGlossary(database) {
   return result.rows;
 }
 
+async function listCantons(database) {
+  const result = await database.query('select * from rutea.cantons order by province_slug, name');
+  return result.rows;
+}
+
 async function findProvince(database, slug) {
   const result = await database.query(`
     select province.*,
@@ -29,4 +34,4 @@ async function findProvince(database, slug) {
   return result.rows[0];
 }
 
-module.exports = { listProvinces, findProvince, listGlossary };
+module.exports = { listProvinces, findProvince, listGlossary, listCantons };
