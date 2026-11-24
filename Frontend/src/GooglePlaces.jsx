@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from './services/api'
 import { directionsUrl } from './utils/catalog-filters'
 
@@ -10,46 +10,82 @@ function Credit({ author }) {
     : name
 }
 
-export default function GooglePlaces({ initialQuery, token }) {
-  const [query, setQuery] = useState(initialQuery)
+function GooglePhoto({ photo, name }) {
+  const [failed, setFailed] = useState(false)
+  if (!photo || failed) return null
+  return <figure className="google-photo">
+    <img src={photo.url} alt={name ?? 'Foto del lugar'} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+    {Boolean(photo.authors.length) && <figcaption>Foto de {photo.authors.map((author, index) => (
+      <span key={author.uri ?? index}>{index > 0 && ', '}<Credit author={author} /></span>
+    ))} · <span translate="no">Google Maps</span></figcaption>}
+  </figure>
+}
+
+function Rating({ place }) {
+  if (place.rating == null) return null
+  return <p><strong>{place.rating.toLocaleString('es-CR')} / 5</strong>
+    {place.userRatingCount != null && ` · ${place.userRatingCount.toLocaleString('es-CR')} valoraciones`}</p>
+}
+
+function Attributions({ place }) {
+  return place.attributions?.map(({ provider, providerUri }) => <p className="google-attribution" key={provider}>
+    <Credit author={{ displayName: provider, uri: providerUri }} />
+  </p>)
+}
+
+export default function GooglePlaces({ query, token, hasLocalFilters }) {
   const [places, setPlaces] = useState(null)
   const [details, setDetails] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
 
-  async function run(path, options, onSuccess) {
+  useEffect(() => {
+    const controller = new AbortController()
+    const delay = setTimeout(async () => {
+      try {
+        const result = await api('google-places/search', {
+          token, signal: controller.signal, method: 'POST', body: { query },
+        })
+        if (!controller.signal.aborted) setPlaces(result.places)
+      } catch (failure) {
+        if (!controller.signal.aborted) setError(failure.message)
+      }
+    }, 750)
+    return () => {
+      clearTimeout(delay)
+      controller.abort()
+    }
+  }, [query, token, retry])
+
+  async function openDetails(id) {
     setBusy(true)
+    setDetails(null)
     setError('')
-    try { onSuccess(await api(path, { ...options, token })) }
+    try { setDetails(await api(`google-places/${encodeURIComponent(id)}`, { token })) }
     catch (failure) { setError(failure.message) }
     finally { setBusy(false) }
   }
 
   return <section className="panel google-results" aria-labelledby="google-places-title">
-    <p className="google-attribution">Google Maps</p>
-    <h2 id="google-places-title">Buscar también en Google Maps</h2>
-    <form onSubmit={(event) => {
-      event.preventDefault()
-      setPlaces(null)
-      setDetails(null)
-      run('google-places/search', { method: 'POST', body: { query } }, (result) => setPlaces(result.places))
-    }}>
-      <label>Busca un negocio o lugar en Costa Rica
-        <input required minLength={3} maxLength={180} value={query} onChange={(event) => setQuery(event.target.value)} />
-      </label>
-      <button disabled={busy}>Buscar en Google Maps</button>
-    </form>
-    {busy && <p role="status">Consultando Google Maps…</p>}
-    {error && <p role="alert">{error}</p>}
+    <div className="section-title">
+      <h2 id="google-places-title">Resultados en vivo</h2>
+      <span className="google-attribution" translate="no">Google Maps</span>
+    </div>
+    {hasLocalFilters && <p className="place-access">Los filtros de accesibilidad, servicios, horario y fuente se aplican al catálogo de RUTEA.</p>}
+    {((!places && !error) || busy) && <p role="status">Consultando lugares…</p>}
+    {error && <div role="alert"><p>{error}</p>
+      {!places && <button className="secondary" onClick={() => { setError(''); setRetry((value) => value + 1) }}>Reintentar</button>}
+    </div>}
     {places?.length === 0 && <p role="status">Google Maps no encontró resultados.</p>}
     {Boolean(places?.length) && <ul className="google-list">{places.map((place) => (
       <li key={place.id}>
+        <GooglePhoto photo={place.photo} name={place.displayName?.text} />
         <strong>{place.displayName?.text}</strong>
         <p>{place.formattedAddress}</p>
-        <button className="secondary" disabled={busy} onClick={() => {
-          setDetails(null)
-          run(`google-places/${encodeURIComponent(place.id)}`, {}, setDetails)
-        }}>Ver ficha de {place.displayName?.text ?? 'este lugar'}</button>
+        <Rating place={place} />
+        <Attributions place={place} />
+        <button className="secondary" disabled={busy} onClick={() => openDetails(place.id)}>Ver ficha de {place.displayName?.text ?? 'este lugar'}</button>
       </li>
     ))}</ul>}
     {details && <Details {...details} />}
@@ -60,13 +96,8 @@ function Details({ place, photo }) {
   return <article className="google-details" aria-label="Ficha de Google Maps">
     <h3>{place.displayName?.text}</h3>
     <p>{place.formattedAddress}</p>
-    {place.rating != null && <p><strong>{place.rating} / 5</strong>{place.userRatingCount != null && ` · ${place.userRatingCount} valoraciones`}</p>}
-    {photo && <figure>
-      <img src={photo.url} alt={place.displayName?.text ?? 'Foto del lugar'} loading="lazy" referrerPolicy="no-referrer" />
-      {Boolean(photo.authors.length) && <figcaption>Foto de {photo.authors.map((author, index) => (
-        <span key={author.uri ?? index}>{index > 0 && ', '}<Credit author={author} /></span>
-      ))} · Google Maps</figcaption>}
-    </figure>}
+    <Rating place={place} />
+    <GooglePhoto key={place.id} photo={photo} name={place.displayName?.text} />
     {place.nationalPhoneNumber && <p>Teléfono {place.nationalPhoneNumber}</p>}
     {Boolean(place.regularOpeningHours?.weekdayDescriptions?.length) && <details><summary>Horarios</summary><ul>
       {place.regularOpeningHours.weekdayDescriptions.map((day) => <li key={day}>{day}</li>)}
@@ -81,8 +112,6 @@ function Details({ place, photo }) {
         <p>{review.text?.text ?? review.originalText?.text}</p>
       </li>)}
     </ul></details>}
-    {place.attributions?.map(({ provider, providerUri }) => <p key={provider}>
-      <Credit author={{ displayName: provider, uri: providerUri }} />
-    </p>)}
+    <Attributions place={place} />
   </article>
 }

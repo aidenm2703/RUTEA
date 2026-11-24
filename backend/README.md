@@ -56,7 +56,7 @@ Configura `GEMINI_API_KEY` y `GEMINI_MODEL` con un modelo que tenga habilitado `
 
 ## Búsqueda en Google Maps
 
-Agrega `GOOGLE_PLACES_API_KEY` al entorno de Express y reinicia el backend. En Google Cloud, habilita únicamente **Places API (New)** para esa llave y configura las cuotas del proyecto. La interfaz envía búsquedas cuando la persona pulsa el botón y pide los detalles y una foto al abrir una ficha. La primera búsqueda utiliza hasta ocho resultados.
+Agrega `GOOGLE_PLACES_API_KEY` al entorno de Express y reinicia el backend. En Google Cloud, habilita únicamente **Places API (New)** para esa llave y configura las cuotas del proyecto. **Adónde ir** envía búsquedas en vivo tras una pausa de 750 ms al escribir o cambiar un filtro de destino. La búsqueda devuelve hasta ocho resultados con calificaciones disponibles y hasta tres fotos preliminares. Al abrir una ficha, solicita sus detalles y una foto disponible. Los filtros de accesibilidad, servicios, horario y fuente pertenecen al catálogo de RUTEA.
 
 | Método y ruta | Datos |
 | --- | --- |

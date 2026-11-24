@@ -49,13 +49,16 @@ input, select { min-width: 0; width: 100%; padding: .6rem .7rem; color: #193e37;
 .access-filters .source-filter { display: flex; gap: 8px; flex-wrap: wrap; }
 .source-filter select { width: auto; max-width: 100%; }
 .load-more, .osm-attribution { margin-top: 16px; }
-.google-results { margin: 12px 0 20px; }
+.google-results { margin: 12px 0 20px; border-color: #b4c3b0; background: #f7fbf5; }
 .google-attribution { font-size: .82rem; color: #4c5651; font-weight: 700; }
-.google-list { list-style: none; padding: 0; display: grid; gap: 10px; }
+.google-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 10px; }
 .google-list li, .google-details { padding: 12px; border: 1px solid #e4d8c4; border-radius: 6px; overflow-wrap: anywhere; }
 .google-details { margin-top: 12px; }
 .google-details figure { margin: 12px 0; }
 .google-details img { display: block; max-width: min(100%, 480px); height: auto; border-radius: 6px; }
+.google-photo { margin: 0 0 10px; }
+.google-list .google-photo img { display: block; width: 100%; height: 145px; object-fit: cover; border-radius: 6px; }
+.google-photo figcaption { font-size: .75rem; }
 .agent-layout { display: grid; gap: 16px; }
 .agent-card [aria-pressed="true"] { background: #c5dcb5; }
 .agent-answer { white-space: pre-wrap; overflow-wrap: anywhere; }

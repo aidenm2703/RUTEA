@@ -24,7 +24,6 @@ export default function App() {
   const [filters, setFilters] = useState(emptyFilters)
   const [limit, setLimit] = useState(pageSize)
   const [destination, setDestination] = useState('')
-  const [showGoogle, setShowGoogle] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -51,7 +50,6 @@ export default function App() {
     setToken(value)
     setCatalog(emptyCatalog)
     setDestination('')
-    setShowGoogle(false)
     setFilters(emptyFilters)
     setLimit(pageSize)
     setView(value ? 'explorar' : 'inicio')
@@ -82,6 +80,14 @@ export default function App() {
   const filtered = Boolean(province || canton || category || subtype || diet || cuisine || search ||
     evidence || hasHours || accessibility.length || services.length)
   const currentProvince = catalog.provinces.find((item) => item.slug === province)
+  const googleQuery = [
+    search.trim(), subtype || (!search.trim() && categories[category]),
+    cuisine && `comida ${cuisineLabel(cuisine)}`,
+    diet && ({ vegetarian: 'opciones vegetarianas', fully_vegan: '100 % vegano',
+      vegan_options: 'opciones veganas', any_vegan: 'comida vegana' })[diet],
+    cantonNames.get(Number(canton)), currentProvince?.name,
+  ].filter(Boolean).join(', ').slice(0, 180)
+  const googleSearchActive = search.trim().length >= 3 || Boolean(category || subtype || cuisine || diet || canton || province)
 
   function changeFilters(updates) {
     setFilters((current) => ({ ...current, ...updates }))
@@ -118,7 +124,7 @@ export default function App() {
           {catalogStatus ?? <>
             <section className="filter-bar" aria-label="Filtros del catálogo">
               <label className="search-field"><Search size={19} aria-hidden="true" />
-                <input aria-label="Buscar lugares" placeholder="Ej. comida coreana en Heredia" value={search} onChange={(event) => changeFilters({ search: event.target.value })} />
+                <input aria-label="Buscar lugares" maxLength={180} placeholder="Ej. comida coreana en Heredia" value={search} onChange={(event) => changeFilters({ search: event.target.value })} />
               </label>
               <label className="province-field">Provincia
                 <select value={province} onChange={(event) => changeFilters({ province: event.target.value, canton: '' })}>
@@ -173,14 +179,9 @@ export default function App() {
             {currentProvince && <aside className="field-note"><strong>Dato de {currentProvince.name}</strong>
               <p>{currentProvince.curiosity}</p><a href={currentProvince.source_url} target="_blank" rel="noreferrer">Consultar fuente <ArrowUpRight size={14} /></a>
             </aside>}
-            <div className="section-title"><h2>Lugares para descubrir</h2><span role="status">{visiblePlaces.length} {visiblePlaces.length === 1 ? 'lugar' : 'lugares'}</span>
-              <button className="secondary" aria-expanded={showGoogle} onClick={() => setShowGoogle((visible) => !visible)}>
-                {showGoogle ? 'Cerrar búsqueda en Google' : 'Buscar también en Google'}
-              </button>
-            </div>
-            {showGoogle && <GooglePlaces token={token} initialQuery={search || [
-              cuisine ? `comida ${cuisineLabel(cuisine)}` : categories[category], cantonNames.get(Number(canton)), currentProvince?.name,
-            ].filter(Boolean).join(' ')} />}
+            {googleSearchActive && <GooglePlaces key={googleQuery} token={token} query={googleQuery}
+              hasLocalFilters={Boolean(accessibility.length || services.length || hasHours || evidence)} />}
+            <div className="section-title"><h2>Catálogo RUTEA</h2><span role="status">{visiblePlaces.length} {visiblePlaces.length === 1 ? 'lugar' : 'lugares'}</span></div>
             {visiblePlaces.length === 0 && <p>El catálogo aún no tiene lugares que cumplan todos estos filtros.</p>}
             <div className="card-grid">{visiblePlaces.slice(0, limit).map((place) => (
               <PlaceCard key={place.slug} place={place} token={token} canton={cantonNames.get(place.canton_code)}

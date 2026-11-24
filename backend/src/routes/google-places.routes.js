@@ -2,7 +2,7 @@ const { Router } = require('express');
 const { rateLimit } = require('express-rate-limit');
 
 const base = 'https://places.googleapis.com/v1';
-const searchFields = 'places.id,places.displayName,places.formattedAddress,places.googleMapsUri';
+const searchFields = 'places.id,places.displayName,places.formattedAddress,places.googleMapsUri,places.rating,places.userRatingCount,places.photos,places.attributions';
 const detailFields = [
   'id', 'displayName', 'formattedAddress', 'googleMapsUri', 'websiteUri', 'nationalPhoneNumber',
   'rating', 'userRatingCount', 'regularOpeningHours.weekdayDescriptions', 'reviews', 'photos', 'attributions',
@@ -10,10 +10,10 @@ const detailFields = [
 const placeIdPattern = /^[A-Za-z0-9_-]{1,255}$/;
 const photoNamePattern = /^places\/[A-Za-z0-9_-]{1,255}\/photos\/[A-Za-z0-9_-]{1,2048}$/;
 
-async function requestGoogle(key, path, { fields, body } = {}) {
+async function requestGoogle(key, path, { fields, body, timeout = 12000 } = {}) {
   const response = await fetch(`${base}/${path}`, {
     method: body ? 'POST' : 'GET',
-    signal: AbortSignal.timeout(12000),
+    signal: AbortSignal.timeout(timeout),
     redirect: 'error',
     headers: {
       'x-goog-api-key': key,
@@ -39,11 +39,11 @@ function providerError(response, error) {
 const normalize = (value) => value.normalize('NFD').replace(/\p{Diacritic}/gu, '')
   .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
-async function getPhoto(key, id, photos) {
+async function getPhoto(key, id, photos, timeout) {
   const first = photos.find(({ name }) => typeof name === 'string' && photoNamePattern.test(name)
     && name.startsWith(`places/${id}/photos/`));
   if (!first) return null;
-  const { photoUri } = await requestGoogle(key, `${first.name}/media?maxWidthPx=720&skipHttpRedirect=true`);
+  const { photoUri } = await requestGoogle(key, `${first.name}/media?maxWidthPx=720&skipHttpRedirect=true`, { timeout });
   if (typeof photoUri !== 'string' || !photoUri.startsWith('https://')) return null;
   return { url: photoUri, authors: first.authorAttributions ?? [] };
 }
@@ -79,7 +79,12 @@ function createGooglePlacesRouter(key, database) {
           } },
         },
       });
-      return response.json({ places: result.places ?? [] });
+      const places = await Promise.all((result.places ?? []).map(async ({ photos = [], ...place }, index) => {
+        if (index >= 3 || !photos.length) return place;
+        const photo = await getPhoto(key, place.id, photos, 3500).catch(() => null);
+        return photo ? { ...place, photo } : place;
+      }));
+      return response.json({ places });
     } catch (error) {
       return providerError(response, error);
     }
