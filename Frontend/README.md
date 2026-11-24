@@ -1,16 +1,11 @@
-# React + Vite
+# RUTEA · Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+1. Configura y arranca Express en el puerto 3000 siguiendo la [guía del backend](../backend/README.md).
+2. Desde `Frontend`, ejecuta `npm ci` y `npm run dev`. Abre la dirección que muestra Vite.
+3. En **Mi pasaporte**, crea una cuenta si el backend tiene habilitado el registro de demostración. Inicia sesión para guardar el lugar de origen y registrar visitas.
 
-Currently, two official plugins are available:
+Vite reenvía las solicitudes `/api` a Express. En producción, sirve el frontend y enruta `/api` al backend en el mismo dominio. La conexión de Supabase y el secreto de JWT se configuran únicamente en Express.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Usa `npm run lint` para verificar el código y `npm run build` para generar el frontend en `dist`.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Las imágenes de `src/assets` son referencias de diseño. La interfaz usa el catálogo y el pasaporte que devuelve la API.
