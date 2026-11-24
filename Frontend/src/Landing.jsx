@@ -65,7 +65,7 @@ function PhotoCredit({ photo }) {
     {' · '}<a href={photo.license} target="_blank" rel="noreferrer">Creative Commons</a></span>
 }
 
-function Carousel() {
+export function Carousel() {
   const [slide, setSlide] = useState(0)
   const photo = slides[slide]
   const step = (offset) => setSlide((index) => (index + offset + slides.length) % slides.length)

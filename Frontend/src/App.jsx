@@ -5,14 +5,15 @@ import Passport from './Passport'
 import Agents from './Agents'
 import GooglePlaces from './GooglePlaces'
 import PlaceCard from './PlaceCard'
-import Landing from './Landing'
+import Landing, { Carousel } from './Landing'
 import logo from './assets/rutea-logo.svg'
-import { accessibilityLabels, categories, cuisineLabel, filterPlaces, serviceLabels } from './utils/catalog-filters'
+import { accessibilityLabels, categories, cuisineLabel, filterPlaces, googlePriceLabels, serviceLabels } from './utils/catalog-filters'
 import './App.css'
 import './Landing.css'
 
 const emptyFilters = { province: '', canton: '', category: '', subtype: '', diet: '', cuisine: '', search: '',
-  accessibility: [], services: [], hasHours: false, evidence: '' }
+  accessibility: [], services: [], hasHours: false, evidence: '', entrance: '', withPhotos: false,
+  openNow: false, minRating: '', priceLevel: '', order: '' }
 const pageSize = 24
 const emptyCatalog = { loading: true, provinces: [], cantons: [], glossary: [] }
 
@@ -69,7 +70,8 @@ export default function App() {
 
   const places = catalog.provinces.flatMap((item) => item.places.map((place) => ({ ...place, province: item.name })))
   const cantonNames = new Map(catalog.cantons.map(({ code, name }) => [code, name]))
-  const { province, canton, category, subtype, diet, cuisine, search, accessibility, services, hasHours, evidence } = filters
+  const { province, canton, category, subtype, diet, cuisine, search, accessibility, services, hasHours, evidence,
+    entrance, withPhotos, openNow, minRating, priceLevel, order } = filters
   const cuisines = [...new Set(places.flatMap((item) => item.cuisine_codes ?? []))]
     .sort((a, b) => cuisineLabel(a).localeCompare(cuisineLabel(b), 'es'))
   const visiblePlaces = filterPlaces(places, cantonNames, filters)
@@ -78,7 +80,8 @@ export default function App() {
     .sort((a, b) => a.localeCompare(b, 'es'))
   const validServices = new Set(byCategory.flatMap((place) => place.services ?? []))
   const filtered = Boolean(province || canton || category || subtype || diet || cuisine || search ||
-    evidence || hasHours || accessibility.length || services.length)
+    evidence || hasHours || accessibility.length || services.length || entrance || withPhotos || openNow || minRating || priceLevel || order)
+  const advancedCount = [subtype, diet, cuisine, hasHours, evidence].filter(Boolean).length + accessibility.length + services.length
   const currentProvince = catalog.provinces.find((item) => item.slug === province)
   const googleQuery = [
     search.trim(), subtype || (!search.trim() && categories[category]),
@@ -86,8 +89,9 @@ export default function App() {
     diet && ({ vegetarian: 'opciones vegetarianas', fully_vegan: '100 % vegano',
       vegan_options: 'opciones veganas', any_vegan: 'comida vegana' })[diet],
     cantonNames.get(Number(canton)), currentProvince?.name,
-  ].filter(Boolean).join(', ').slice(0, 180)
-  const googleSearchActive = search.trim().length >= 3 || Boolean(category || subtype || cuisine || diet || canton || province)
+  ].filter(Boolean).join(', ').slice(0, 180) || 'lugares de interés'
+  const googleSearchActive = search.trim().length >= 3 || Boolean(category || subtype || cuisine || diet || canton || province ||
+    withPhotos || openNow || minRating || priceLevel || order)
 
   function changeFilters(updates) {
     setFilters((current) => ({ ...current, ...updates }))
@@ -120,9 +124,10 @@ export default function App() {
       <main className="shell">
         {view === 'inicio' && <Landing onExplore={() => navigate('explorar')} />}
         {view === 'explorar' && <>
-          <div className="page-heading"><h1>Adónde ir</h1></div>
+          <div className="page-heading discovery-heading"><p className="eyebrow">Explora Costa Rica</p><h1>Adónde ir</h1></div>
           {catalogStatus ?? <>
-            <section className="filter-bar" aria-label="Filtros del catálogo">
+            <section className="discovery-filters" aria-label="Filtros de lugares">
+            <div className="filter-bar filter-primary">
               <label className="search-field"><Search size={19} aria-hidden="true" />
                 <input aria-label="Buscar lugares" maxLength={180} placeholder="Ej. comida coreana en Heredia" value={search} onChange={(event) => changeFilters({ search: event.target.value })} />
               </label>
@@ -141,6 +146,31 @@ export default function App() {
               }}>
                 <option value="">Todos los tipos</option>{Object.entries(categories).map(([key, name]) => <option key={key} value={key}>{name}</option>)}
               </select></label>
+            </div>
+            <div className="filter-quick">
+              <label className="province-field">Orden<select value={order} onChange={(event) => changeFilters({ order: event.target.value })}>
+                <option value="">Por relevancia</option><option value="recommended">Más recomendados</option>
+                <option value="rating">Mayor calificación</option><option value="reviews">Más valoraciones</option>
+              </select></label>
+              <label className="province-field">Estrellas<select value={minRating} onChange={(event) => changeFilters({ minRating: event.target.value })}>
+                <option value="">Cualquier calificación</option>
+                {[3, 3.5, 4, 4.5, 5].map((value) => <option key={value} value={value}>{value.toLocaleString('es-CR')} de 5 o más</option>)}
+              </select></label>
+              <label className="province-field">Nivel de precios<select value={priceLevel} onChange={(event) => changeFilters({ priceLevel: event.target.value })}>
+                <option value="">Cualquier precio</option>
+                {Object.entries(googlePriceLabels).map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+              </select></label>
+              <label className="province-field">Entrada<select value={entrance} onChange={(event) => changeFilters({ entrance: event.target.value })}>
+                <option value="">Cualquier entrada</option><option value="free">Entrada gratuita</option><option value="paid">Entrada de pago</option>
+              </select></label>
+            </div>
+            <div className="filter-toggles">
+              <label><input type="checkbox" checked={withPhotos} onChange={(event) => changeFilters({ withPhotos: event.target.checked })} /> Con fotos</label>
+              <label><input type="checkbox" checked={openNow} onChange={(event) => changeFilters({ openNow: event.target.checked })} /> Abierto ahora</label>
+              {filtered && <button className="secondary" onClick={() => changeFilters(emptyFilters)}>Limpiar filtros</button>}
+            </div>
+            <details className="advanced-filters"><summary>Más filtros{advancedCount > 0 && <span>{advancedCount} activos</span>}</summary>
+              <div className="filter-bar filter-advanced-inputs">
               <label className="province-field">Subtipo<select value={subtype} onChange={(event) => changeFilters({ subtype: event.target.value })}>
                 <option value="">Todos los subtipos</option>
                 {subtypes.map((item) => <option key={item} value={item}>{item}</option>)}
@@ -156,8 +186,7 @@ export default function App() {
                   {cuisines.map((code) => <option key={code} value={code}>{cuisineLabel(code)}</option>)}
                 </select></label>
               </>}
-              {filtered && <button className="secondary" onClick={() => changeFilters(emptyFilters)}>Limpiar filtros</button>}
-            </section>
+              </div>
             <fieldset className="access-filters"><legend>Accesibilidad</legend>
               {Object.entries(accessibilityLabels).map(([key, label]) => <label key={key}>
                 <input type="checkbox" checked={accessibility.includes(key)} onChange={(event) => changeFilters({
@@ -166,7 +195,7 @@ export default function App() {
               </label>)}
             </fieldset>
             {(validServices.size > 0 || places.some((place) => place.hours)) && <fieldset className="access-filters"><legend>Servicios y horarios</legend>
-              {Object.entries(serviceLabels).filter(([value]) => validServices.has(value)).map(([value, label]) => <label key={value}>
+              {Object.entries(serviceLabels).filter(([value]) => validServices.has(value) && value !== 'free' && value !== 'paid').map(([value, label]) => <label key={value}>
                 <input type="checkbox" checked={services.includes(value)} onChange={(event) => changeFilters({
                   services: event.target.checked ? [...services, value] : services.filter((service) => value !== service),
                 })} /> {label}
@@ -176,11 +205,17 @@ export default function App() {
                 <option value="">Todas las fuentes</option><option value="editorial">Catálogo editorial</option><option value="openstreetmap">OpenStreetMap</option>
               </select></label>
             </fieldset>}
+            </details>
+            </section>
             {currentProvince && <aside className="field-note"><strong>Dato de {currentProvince.name}</strong>
               <p>{currentProvince.curiosity}</p><a href={currentProvince.source_url} target="_blank" rel="noreferrer">Consultar fuente <ArrowUpRight size={14} /></a>
             </aside>}
-            {googleSearchActive && <GooglePlaces key={googleQuery} token={token} query={googleQuery}
-              hasLocalFilters={Boolean(accessibility.length || services.length || hasHours || evidence)} />}
+            {!filtered && <section className="discovery-carousel"><h2>Postales de Costa Rica</h2><Carousel /></section>}
+            {googleSearchActive && <GooglePlaces key={JSON.stringify([googleQuery, minRating, priceLevel, withPhotos, openNow])}
+              token={token} query={googleQuery} minRating={minRating} priceLevel={priceLevel}
+              withPhotos={withPhotos} openNow={openNow} order={order}
+              hasLocalFilters={Boolean(accessibility.length || services.length || hasHours || evidence || entrance)} />}
+            {Boolean(minRating || priceLevel || openNow || order) && <p className="place-access">Las estrellas, los precios, la apertura en tiempo real y el orden por valoraciones se aplican a los resultados en vivo.</p>}
             <div className="section-title"><h2>Catálogo RUTEA</h2><span role="status">{visiblePlaces.length} {visiblePlaces.length === 1 ? 'lugar' : 'lugares'}</span></div>
             {visiblePlaces.length === 0 && <p>El catálogo aún no tiene lugares que cumplan todos estos filtros.</p>}
             <div className="card-grid">{visiblePlaces.slice(0, limit).map((place) => (

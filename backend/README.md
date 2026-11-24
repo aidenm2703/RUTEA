@@ -28,6 +28,8 @@ El archivo `database/catalogo-osm.sql` contiene datos de los colaboradores de Op
 
 Aplica `database/catalogo-detalles.sql` y después `database/catalogo-osm-detalles.sql` para habilitar subtipos, servicios, horarios, direcciones y coordenadas. Puedes reproducir el segundo archivo con el mismo PBF mediante `python database/enriquecer_catalogo_osm.py <extracto.osm.pbf> <salida.sql>`. Una coordenada de OpenStreetMap señala la ficha cartográfica y puede diferir de la entrada. Los filtros de servicio y horario incluyen las fichas que tienen datos registrados.
 
+Aplica `database/catalogo-entradas.sql` para agregar información editorial de entrada gratuita y de pago con fuentes oficiales.
+
 | Método y ruta | Datos |
 | --- | --- |
 | `POST /api/auth/register` | `displayName`, `email`, `password` en modo demo. |
@@ -61,7 +63,7 @@ Agrega `GOOGLE_PLACES_API_KEY` al entorno de Express y reinicia el backend. En G
 | Método y ruta | Datos |
 | --- | --- |
 | `GET /api/google-places/status` | Indica si hay una llave configurada. |
-| `POST /api/google-places/search` | `query`, texto para buscar en Costa Rica. |
+| `POST /api/google-places/search` | `query` y filtros opcionales `minRating`, `priceLevel`, `openNow` y `withPhotos`. |
 | `GET /api/google-places/:id` | Ficha, reseñas destacadas y foto disponible con atribución. |
 | `GET /api/google-places/catalog-photo/:slug` | Busca una foto bajo demanda para una ficha del catálogo. Exige coincidencia única de nombre y localidad. |
 

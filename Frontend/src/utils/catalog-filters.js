@@ -1,9 +1,18 @@
+import { catalogPhoto } from '../media.js'
+
 export const categories = { nature: 'Naturaleza', culture: 'Cultura', restaurant: 'Restaurantes', lodging: 'Alojamiento' }
 export const menuLabels = { fully_vegan: '100 % vegano', vegan_options: 'Opciones veganas' }
 export const serviceLabels = {
   outdoor: 'Mesas al aire libre', takeaway: 'Para llevar', delivery: 'Entrega a domicilio',
   reservations: 'Reservas', wifi: 'Wi-Fi', parking: 'Estacionamiento',
   dogs: 'Admite perros', camping: 'Camping', free: 'Entrada gratuita', paid: 'Entrada de pago',
+}
+export const googlePriceLabels = {
+  PRICE_LEVEL_FREE: 'Gratis según Google',
+  PRICE_LEVEL_INEXPENSIVE: 'Económico',
+  PRICE_LEVEL_MODERATE: 'Moderado',
+  PRICE_LEVEL_EXPENSIVE: 'Caro',
+  PRICE_LEVEL_VERY_EXPENSIVE: 'Muy caro',
 }
 export const accessibilityLabels = {
   ramp: 'Rampa para silla de ruedas',
@@ -60,6 +69,8 @@ export function filterPlaces(places, cantonNames, filters) {
       && (!filters.subtype || filters.subtype === item.subtype)
       && (!filters.evidence || filters.evidence === item.evidence_kind)
       && (!filters.hasHours || Boolean(item.hours))
+      && (!filters.withPhotos || Boolean(catalogPhoto(item)))
+      && (!filters.entrance || item.services?.includes(filters.entrance))
       && (filters.services ?? []).every((service) => item.services?.includes(service))
       && (!asksRestaurant || item.category === 'restaurant')
       && (!asksLodging || item.category === 'lodging')

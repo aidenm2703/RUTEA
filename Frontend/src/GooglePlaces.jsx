@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './services/api'
-import { directionsUrl } from './utils/catalog-filters'
+import { directionsUrl, googlePriceLabels } from './utils/catalog-filters'
 
 function Credit({ author }) {
   const name = author?.displayName
@@ -27,13 +27,43 @@ function Rating({ place }) {
     {place.userRatingCount != null && ` · ${place.userRatingCount.toLocaleString('es-CR')} valoraciones`}</p>
 }
 
+function formatPrice(money) {
+  if (!/^[A-Z]{3}$/.test(money?.currencyCode ?? '')) return null
+  const value = Number(money.units ?? 0) + (money.nanos ?? 0) / 1e9
+  if (!Number.isFinite(value)) return null
+  return new Intl.NumberFormat('es-CR', { style: 'currency', currency: money.currencyCode }).format(value)
+}
+
+function PriceAndHours({ place }) {
+  const start = formatPrice(place.priceRange?.startPrice)
+  const end = formatPrice(place.priceRange?.endPrice)
+  const band = googlePriceLabels[place.priceLevel]
+  return <div className="google-facts">
+    {(start || end || band) && <span>{start && end ? `${start}–${end}` : start ? `Desde ${start}` : end ? `Hasta ${end}` : band}</span>}
+    {place.currentOpeningHours?.openNow != null && <span>{place.currentOpeningHours.openNow ? 'Abierto ahora' : 'Cerrado ahora'}</span>}
+  </div>
+}
+
+function recommendation(place) {
+  if (place.rating == null) return -1
+  const count = place.userRatingCount ?? 1
+  return (place.rating * count + 4.2 * 25) / (count + 25)
+}
+
+function orderPlaces(places, order) {
+  if (!places || !order) return places
+  const score = order === 'rating' ? (place) => place.rating ?? -1
+    : order === 'reviews' ? (place) => place.userRatingCount ?? -1 : recommendation
+  return [...places].sort((a, b) => score(b) - score(a))
+}
+
 function Attributions({ place }) {
   return place.attributions?.map(({ provider, providerUri }) => <p className="google-attribution" key={provider}>
     <Credit author={{ displayName: provider, uri: providerUri }} />
   </p>)
 }
 
-export default function GooglePlaces({ query, token, hasLocalFilters }) {
+export default function GooglePlaces({ query, token, hasLocalFilters, minRating, priceLevel, withPhotos, openNow, order }) {
   const [places, setPlaces] = useState(null)
   const [details, setDetails] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -45,7 +75,9 @@ export default function GooglePlaces({ query, token, hasLocalFilters }) {
     const delay = setTimeout(async () => {
       try {
         const result = await api('google-places/search', {
-          token, signal: controller.signal, method: 'POST', body: { query },
+          token, signal: controller.signal, method: 'POST', body: {
+            query, minRating: minRating ? Number(minRating) : null, priceLevel: priceLevel || null, withPhotos, openNow,
+          },
         })
         if (!controller.signal.aborted) setPlaces(result.places)
       } catch (failure) {
@@ -56,7 +88,7 @@ export default function GooglePlaces({ query, token, hasLocalFilters }) {
       clearTimeout(delay)
       controller.abort()
     }
-  }, [query, token, retry])
+  }, [query, token, retry, minRating, priceLevel, withPhotos, openNow])
 
   async function openDetails(id) {
     setBusy(true)
@@ -72,18 +104,20 @@ export default function GooglePlaces({ query, token, hasLocalFilters }) {
       <h2 id="google-places-title">Resultados en vivo</h2>
       <span className="google-attribution" translate="no">Google Maps</span>
     </div>
-    {hasLocalFilters && <p className="place-access">Los filtros de accesibilidad, servicios, horario y fuente se aplican al catálogo de RUTEA.</p>}
+    {hasLocalFilters && <p className="place-access">Los filtros de entrada, accesibilidad, servicios, horario y fuente se aplican al catálogo de RUTEA.</p>}
+    {order === 'recommended' && <p className="place-access">Recomendación basada en la calificación y la cantidad de valoraciones.</p>}
     {((!places && !error) || busy) && <p role="status">Consultando lugares…</p>}
     {error && <div role="alert"><p>{error}</p>
       {!places && <button className="secondary" onClick={() => { setError(''); setRetry((value) => value + 1) }}>Reintentar</button>}
     </div>}
     {places?.length === 0 && <p role="status">Google Maps no encontró resultados.</p>}
-    {Boolean(places?.length) && <ul className="google-list">{places.map((place) => (
+    {Boolean(places?.length) && <ul className="google-list">{orderPlaces(places, order).map((place) => (
       <li key={place.id}>
         <GooglePhoto photo={place.photo} name={place.displayName?.text} />
         <strong>{place.displayName?.text}</strong>
         <p>{place.formattedAddress}</p>
         <Rating place={place} />
+        <PriceAndHours place={place} />
         <Attributions place={place} />
         <button className="secondary" disabled={busy} onClick={() => openDetails(place.id)}>Ver ficha de {place.displayName?.text ?? 'este lugar'}</button>
       </li>
@@ -97,6 +131,7 @@ function Details({ place, photo }) {
     <h3>{place.displayName?.text}</h3>
     <p>{place.formattedAddress}</p>
     <Rating place={place} />
+    <PriceAndHours place={place} />
     <GooglePhoto key={place.id} photo={photo} name={place.displayName?.text} />
     {place.nationalPhoneNumber && <p>Teléfono {place.nationalPhoneNumber}</p>}
     {Boolean(place.regularOpeningHours?.weekdayDescriptions?.length) && <details><summary>Horarios</summary><ul>

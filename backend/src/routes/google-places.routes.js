@@ -2,10 +2,12 @@ const { Router } = require('express');
 const { rateLimit } = require('express-rate-limit');
 
 const base = 'https://places.googleapis.com/v1';
-const searchFields = 'places.id,places.displayName,places.formattedAddress,places.googleMapsUri,places.rating,places.userRatingCount,places.photos,places.attributions';
+const searchFields = 'places.id,places.displayName,places.formattedAddress,places.googleMapsUri,places.rating,places.userRatingCount,places.photos,places.attributions,places.priceLevel,places.priceRange,places.currentOpeningHours.openNow';
+const priceLevels = ['PRICE_LEVEL_FREE', 'PRICE_LEVEL_INEXPENSIVE', 'PRICE_LEVEL_MODERATE', 'PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_VERY_EXPENSIVE'];
 const detailFields = [
   'id', 'displayName', 'formattedAddress', 'googleMapsUri', 'websiteUri', 'nationalPhoneNumber',
-  'rating', 'userRatingCount', 'regularOpeningHours.weekdayDescriptions', 'reviews', 'photos', 'attributions',
+  'rating', 'userRatingCount', 'regularOpeningHours.weekdayDescriptions', 'currentOpeningHours.openNow',
+  'priceLevel', 'priceRange', 'reviews', 'photos', 'attributions',
 ].join(',');
 const placeIdPattern = /^[A-Za-z0-9_-]{1,255}$/;
 const photoNamePattern = /^places\/[A-Za-z0-9_-]{1,255}\/photos\/[A-Za-z0-9_-]{1,2048}$/;
@@ -63,9 +65,15 @@ function createGooglePlacesRouter(key, database) {
     message: { error: 'Espera un minuto antes de consultar Google Maps de nuevo.' } }));
 
   router.post('/search', async (request, response) => {
-    const query = request.body?.query;
+    const { query, minRating, openNow, priceLevel, withPhotos } = request.body ?? {};
     if (typeof query !== 'string' || query.trim().length < 3 || query.length > 180) {
       return response.status(400).json({ error: 'Escribe una búsqueda de 3 a 180 caracteres.' });
+    }
+    if ((minRating != null && ![3, 3.5, 4, 4.5, 5].includes(minRating))
+      || (priceLevel != null && !priceLevels.includes(priceLevel))
+      || (openNow != null && typeof openNow !== 'boolean')
+      || (withPhotos != null && typeof withPhotos !== 'boolean')) {
+      return response.status(400).json({ error: 'Revisa los filtros de la búsqueda.' });
     }
     try {
       const result = await requestGoogle(key, 'places:searchText', {
@@ -73,18 +81,26 @@ function createGooglePlacesRouter(key, database) {
         body: {
           textQuery: `${query.trim()}, Costa Rica`,
           languageCode: 'es', regionCode: 'CR', pageSize: 8,
+          ...(minRating != null && { minRating }),
+          ...(priceLevel != null && { priceLevels: [priceLevel] }),
+          ...(openNow && { openNow: true }),
           locationRestriction: { rectangle: {
             low: { latitude: 8, longitude: -86 },
             high: { latitude: 11.3, longitude: -82.45 },
           } },
         },
       });
-      const places = await Promise.all((result.places ?? []).map(async ({ photos = [], ...place }, index) => {
+      const filtered = (result.places ?? []).filter((place) =>
+        (minRating == null || (place.rating != null && place.rating >= minRating))
+        && (priceLevel == null || place.priceLevel === priceLevel)
+        && (!openNow || place.currentOpeningHours?.openNow === true)
+        && (!withPhotos || Boolean(place.photos?.length)));
+      const places = await Promise.all(filtered.map(async ({ photos = [], ...place }, index) => {
         if (index >= 3 || !photos.length) return place;
         const photo = await getPhoto(key, place.id, photos, 3500).catch(() => null);
         return photo ? { ...place, photo } : place;
       }));
-      return response.json({ places });
+      return response.json({ places: withPhotos ? places.filter((place) => place.photo) : places });
     } catch (error) {
       return providerError(response, error);
     }
