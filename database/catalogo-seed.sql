@@ -1,0 +1,82 @@
+insert into rutea.provinces (slug, name, curiosity, source_url, reviewed_on) values
+  ('san-jose', 'San José', 'El Teatro Nacional se construyó entre 1890 y 1897.', 'https://es.visitcostarica.com/where-to-go/central-valley', '2026-11-24'),
+  ('alajuela', 'Alajuela', 'El Poás es uno de los volcanes que enmarcan el Valle Central.', 'https://www.visitcostarica.com/where-to-go/central-valley', '2026-11-24'),
+  ('cartago', 'Cartago', 'La iglesia de Orosi fue declarada monumento nacional en 1920.', 'https://es.visitcostarica.com/where-to-go/central-valley/tourist-atractions-in-central-valley', '2026-11-24'),
+  ('heredia', 'Heredia', 'Fadrique Gutiérrez mandó construir el Fortín en 1876.', 'https://www.heredia.go.cr/es/bienestar-social/noticias/arte-y-cultura/celebracion-del-legado-de-el-fortin-simbolo-de-identidad', '2026-11-24'),
+  ('guanacaste', 'Guanacaste', 'En la tradición oral guanacasteca se documentan bombas y retahílas.', 'https://repositorio.ciicla.ucr.ac.cr/items/26fb502b-3b3f-4a79-a61d-32b8f0ff8c24', '2026-11-24'),
+  ('puntarenas', 'Puntarenas', 'Varias esferas del Diquís conservan su ubicación original en Finca 6.', 'https://www.museocostarica.go.cr/visitar/', '2026-11-24'),
+  ('limon', 'Limón', 'El criollo limonense tiene base inglesa y está emparentado con el criollo jamaiquino.', 'https://inil.ucr.ac.cr/linguistica/criollo-limonense/', '2026-11-24')
+on conflict do nothing;
+
+insert into rutea.places (slug, province_slug, name, visit_notes, reviewed_on) values
+  ('teatro-nacional-san-jose', 'san-jose', 'Teatro Nacional, San José', 'Recorrer el edificio y observar su arquitectura. Se construyó entre 1890 y 1897, con financiamiento público mediante impuestos a las importaciones.', '2026-11-24'),
+  ('museo-nacional-san-jose', 'san-jose', 'Museo Nacional, San José', 'Comparar las salas de historia precolombina y de historia de Costa Rica y continuar con un paseo por el centro.', '2026-11-24'),
+  ('volcan-poas-poas', 'alajuela', 'Volcán Poás, Poás', 'Observar el cráter desde el área de visita cuando esté habilitada. La parada permite explicar la relación entre el paisaje del Valle Central y sus volcanes.', '2026-11-24'),
+  ('museo-historico-cultural-juan-santamaria-alajuela', 'alajuela', 'Museo Histórico Cultural Juan Santamaría, Alajuela', 'Visitar el museo como punto de partida para conocer la Campaña Nacional y el contexto histórico de Juan Santamaría.', '2026-11-24'),
+  ('orosi-paraiso', 'cartago', 'Orosi, Paraíso', 'Recorrer el pueblo y observar la iglesia de San José de Orosi, declarada monumento nacional en 1920. La visita sirve para conversar sobre la arquitectura colonial en el valle del Reventazón.', '2026-11-24'),
+  ('volcan-irazu-cartago', 'cartago', 'Volcán Irazú, Cartago', 'Visitar los miradores habilitados. Una curiosidad para el camino es que Irazú y Turrialba son conocidos como volcanes gemelos.', '2026-11-24'),
+  ('museo-de-cultura-popular-santa-lucia-de-barva', 'heredia', 'Museo de Cultura Popular, Santa Lucía de Barva', 'Conocer objetos y prácticas de la vida cotidiana del Valle Central y comparar cómo se cocinaba y se vivía en otras épocas.', '2026-11-24'),
+  ('ruta-de-cafe-en-heredia', 'heredia', 'Ruta de café en Heredia', 'Buscar una visita guiada a una finca para observar el proceso del café y participar en una degustación cuando se ofrezca. La ficha corresponde a una actividad regional y cada operador tendrá su propia ficha.', '2026-11-24'),
+  ('centro-de-nicoya', 'guanacaste', 'Centro de Nicoya', 'Caminar por el centro y usar la parada para explicar la decisión de la Alcaldía de Nicoya de incorporarse a Costa Rica en julio de 1824.', '2026-11-24'),
+  ('rincon-de-la-vieja-sector-las-pailas', 'guanacaste', 'Rincón de la Vieja, sector Las Pailas', 'Caminar por el sendero habilitado y observar fumarolas y pailas de barro. En el recorrido se aprecia una transición entre bosque seco y bosque húmedo.', '2026-11-24'),
+  ('sitio-museo-finca-6-palmar-sur-de-osa', 'puntarenas', 'Sitio Museo Finca 6, Palmar Sur de Osa', 'Recorrer el sitio arqueológico y observar esferas de piedra que conservan su ubicación original. Finca 6 forma parte del conjunto de sitios del Diquís declarado Patrimonio Mundial en 2014.', '2026-11-24'),
+  ('mercado-de-puntarenas-ciudad-de-puntarenas', 'puntarenas', 'Mercado de Puntarenas, ciudad de Puntarenas', 'Recorrer los puestos y conocer el vocabulario de los intercambios cotidianos. Un estudio de la UCR documentó voces como «vuelto» y la expresión «ponerse vivo» entre las personas que participaron en el mercado.', '2026-11-24'),
+  ('parque-nacional-cahuita-talamanca', 'limon', 'Parque Nacional Cahuita, Talamanca', 'Explorar el sector habilitado y distinguir los dos accesos, Playa Blanca y Puerto Vargas. La ficha debe mostrar cuál entrada corresponde a cada actividad.', '2026-11-24'),
+  ('puerto-limon', 'limon', 'Puerto Limón', 'Hacer un paseo urbano con una introducción a la diversidad lingüística del Caribe costarricense. El criollo limonense, también conocido como mekatelyu, es una lengua de base inglesa emparentada con el criollo jamaiquino.', '2026-11-24')
+on conflict do nothing;
+
+insert into rutea.place_links (place_slug, kind, label, url) values
+  ('teatro-nacional-san-jose', 'source', 'ICT', 'https://es.visitcostarica.com/where-to-go/central-valley'),
+  ('teatro-nacional-san-jose', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Teatro%20Nacional%2C%20San%20Jos%C3%A9%2C%20San%20Jos%C3%A9%2C%20Costa%20Rica'),
+  ('teatro-nacional-san-jose', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('museo-nacional-san-jose', 'source', 'ICT, paseos históricos', 'https://es.visitcostarica.com/things-to-do/culture/historical-walks/san-jose'),
+  ('museo-nacional-san-jose', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Museo%20Nacional%2C%20San%20Jos%C3%A9%2C%20San%20Jos%C3%A9%2C%20Costa%20Rica'),
+  ('museo-nacional-san-jose', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('volcan-poas-poas', 'source', 'ICT, Valle Central', 'https://www.visitcostarica.com/where-to-go/central-valley'),
+  ('volcan-poas-poas', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Volc%C3%A1n%20Po%C3%A1s%2C%20Po%C3%A1s%2C%20Alajuela%2C%20Costa%20Rica'),
+  ('volcan-poas-poas', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('museo-historico-cultural-juan-santamaria-alajuela', 'source', 'ICT, actividades culturales', 'https://es.visitcostarica.com/where-to-go/central-valley/activities-in-central-valley'),
+  ('museo-historico-cultural-juan-santamaria-alajuela', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Museo%20Hist%C3%B3rico%20Cultural%20Juan%20Santamar%C3%ADa%2C%20Alajuela%2C%20Alajuela%2C%20Costa%20Rica'),
+  ('museo-historico-cultural-juan-santamaria-alajuela', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('orosi-paraiso', 'source', 'ICT, atractivos del Valle Central', 'https://es.visitcostarica.com/where-to-go/central-valley/tourist-atractions-in-central-valley'),
+  ('orosi-paraiso', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Orosi%2C%20Para%C3%ADso%2C%20Cartago%2C%20Costa%20Rica'),
+  ('orosi-paraiso', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('volcan-irazu-cartago', 'source', 'ICT, Valle Central', 'https://es.visitcostarica.com/where-to-go/central-valley'),
+  ('volcan-irazu-cartago', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Volc%C3%A1n%20Iraz%C3%BA%2C%20Cartago%2C%20Cartago%2C%20Costa%20Rica'),
+  ('volcan-irazu-cartago', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('museo-de-cultura-popular-santa-lucia-de-barva', 'source', 'ICT, actividades culturales', 'https://es.visitcostarica.com/where-to-go/central-valley/activities-in-central-valley'),
+  ('museo-de-cultura-popular-santa-lucia-de-barva', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Museo%20de%20Cultura%20Popular%2C%20Santa%20Luc%C3%ADa%20de%20Barva%2C%20Heredia%2C%20Costa%20Rica'),
+  ('museo-de-cultura-popular-santa-lucia-de-barva', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('ruta-de-cafe-en-heredia', 'source', 'ICT, actividades del Valle Central', 'https://es.visitcostarica.com/where-to-go/central-valley/activities-in-central-valley'),
+  ('ruta-de-cafe-en-heredia', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Ruta%20de%20caf%C3%A9%20en%20Heredia%2C%20Heredia%2C%20Costa%20Rica'),
+  ('ruta-de-cafe-en-heredia', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('centro-de-nicoya', 'source', 'Ministerio de Cultura y Juventud', 'https://www.mcj.go.cr/print/pdf/node/3191'),
+  ('centro-de-nicoya', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Centro%20de%20Nicoya%2C%20Guanacaste%2C%20Costa%20Rica'),
+  ('centro-de-nicoya', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('rincon-de-la-vieja-sector-las-pailas', 'source', 'SINAC', 'https://sinac.go.cr/ES/ac/acg/pnrv/Paginas/default.aspx'),
+  ('rincon-de-la-vieja-sector-las-pailas', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Rinc%C3%B3n%20de%20la%20Vieja%2C%20sector%20Las%20Pailas%2C%20Guanacaste%2C%20Costa%20Rica'),
+  ('rincon-de-la-vieja-sector-las-pailas', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('sitio-museo-finca-6-palmar-sur-de-osa', 'source', 'Museo Nacional, visita', 'https://www.museocostarica.go.cr/visitar/'),
+  ('sitio-museo-finca-6-palmar-sur-de-osa', 'source', 'Museo Nacional, patrimonio mundial', 'https://www.museocostarica.go.cr/jardin_relaciones-ser-humano-naturaleza/jardin_sitios-patrimonio-mundial/'),
+  ('sitio-museo-finca-6-palmar-sur-de-osa', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Sitio%20Museo%20Finca%206%2C%20Palmar%20Sur%20de%20Osa%2C%20Puntarenas%2C%20Costa%20Rica'),
+  ('sitio-museo-finca-6-palmar-sur-de-osa', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('mercado-de-puntarenas-ciudad-de-puntarenas', 'source', 'UCR, estudio del habla del mercado', 'https://archivo.revistas.ucr.ac.cr/index.php/kanina/article/download/21253/21645'),
+  ('mercado-de-puntarenas-ciudad-de-puntarenas', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Mercado%20de%20Puntarenas%2C%20ciudad%20de%20Puntarenas%2C%20Puntarenas%2C%20Costa%20Rica'),
+  ('mercado-de-puntarenas-ciudad-de-puntarenas', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('parque-nacional-cahuita-talamanca', 'source', 'SINAC', 'https://www.sinac.go.cr/EN-US/turismo/Pages/map.aspx'),
+  ('parque-nacional-cahuita-talamanca', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Parque%20Nacional%20Cahuita%2C%20Talamanca%2C%20Lim%C3%B3n%2C%20Costa%20Rica'),
+  ('parque-nacional-cahuita-talamanca', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations'),
+  ('puerto-limon', 'source', 'UCR, Instituto de Investigaciones Lingüísticas', 'https://inil.ucr.ac.cr/linguistica/criollo-limonense/'),
+  ('puerto-limon', 'map_search', 'Buscar en Google Maps', 'https://www.google.com/maps/search/?api=1&query=Puerto%20Lim%C3%B3n%2C%20Lim%C3%B3n%2C%20Costa%20Rica'),
+  ('puerto-limon', 'lodging_directory', 'Consultar alojamientos del ICT', 'https://es.visitcostarica.com/planning-your-trip/accommodations')
+on conflict do nothing;
+
+insert into rutea.glossary (slug, province_slug, expression, language, usage_notes, source_url, reviewed_on) values
+  ('pura-vida', null, 'Pura vida', 'español costarricense', 'Puede funcionar como saludo o respuesta amistosa. Ejemplo: «¿Todo bien?» «¡Pura vida!». La UCR documenta que su difusión en Costa Rica estuvo vinculada con una película mexicana de mediados del siglo XX.', 'https://www.ucr.ac.cr/noticias/2021/6/24/la-popular-frase-pura-vida-traspaso-las-fronteras-y-fue-acogida-por-la-sociedad-costarricense.html', '2026-11-24'),
+  ('mae', null, 'Mae', 'español costarricense', 'Forma coloquial de dirigirse a alguien con confianza. Ejemplo: «Mae, ¿vamos al museo?».', 'https://archivo.revistas.ucr.ac.cr/index.php/kanina/article/download/711/774/1092', '2026-11-24'),
+  ('tuanis', null, 'Tuanis', 'español costarricense', 'Expresa que algo está bien o gusta. Ejemplo: «¡Qué tuanis el recorrido!».', 'https://www.ucr.ac.cr/noticias/2025/3/10/un-refugio-para-las-palabras-ticas.html', '2026-11-24'),
+  ('diay', null, 'Diay', 'español costarricense', 'Interjección coloquial cuyo sentido depende del tono. Ejemplo: «Diay, ¿qué hacemos ahora?».', 'https://archivo.revistas.ucr.ac.cr/index.php/kanina/article/download/711/774/1092', '2026-11-24'),
+  ('mekatelyu-sometin', 'limon', 'Mekatelyu sometin', 'criollo limonense', 'En criollo limonense significa «déjame decirte algo».', 'https://inil.ucr.ac.cr/linguistica/criollo-limonense/', '2026-11-24'),
+  ('bomba-guanacasteca', 'guanacaste', 'Bomba', 'español costarricense', 'Composición oral breve de la tradición guanacasteca.', 'https://repositorio.ciicla.ucr.ac.cr/items/26fb502b-3b3f-4a79-a61d-32b8f0ff8c24', '2026-11-24'),
+  ('ponerse-vivo', 'puntarenas', 'Ponerse vivo', 'español costarricense', 'Estar atento. Uso documentado en un estudio del mercado de Puntarenas.', 'https://archivo.revistas.ucr.ac.cr/index.php/kanina/article/download/21253/21645', '2026-11-24')
+on conflict do nothing;
