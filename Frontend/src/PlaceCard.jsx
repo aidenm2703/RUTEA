@@ -3,6 +3,7 @@ import { ArrowUpRight, Camera, MapPin } from 'lucide-react'
 import { accessibilityLabels, categories, cuisineLabel, directionsUrl, menuLabels, serviceLabels } from './utils/catalog-filters'
 import { catalogPhoto } from './media'
 import { api } from './services/api'
+import { ReferencePhoto } from './PlaceMedia'
 
 function MiniMap({ latitude, longitude, name }) {
   const [open, setOpen] = useState(false)
@@ -52,8 +53,8 @@ function PlacePhoto({ place, token }) {
     </span>)}</figcaption>
   </figure>
   return <div className={`place-photo-placeholder place-photo-${place.category}`}>
-    <Camera size={24} aria-hidden="true" />
-    {!unavailable && <button className="secondary" onClick={loadPhoto} disabled={busy}>{busy ? 'Buscando foto…' : 'Buscar foto del lugar'}</button>}
+    <ReferencePhoto name={place.name} category={place.category} />
+    {!unavailable && <button className="photo-lookup" onClick={loadPhoto} disabled={busy}><Camera size={14} aria-hidden="true" />{busy ? 'Buscando foto…' : 'Buscar foto del lugar'}</button>}
     {status && <p role="status">{status}</p>}
   </div>
 }

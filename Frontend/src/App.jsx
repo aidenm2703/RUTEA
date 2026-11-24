@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { ArrowUpRight, Search } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowUpRight, BedDouble, Camera, Clock3, Compass, Landmark, MapPin, Search, SlidersHorizontal, Trees, Utensils, X } from 'lucide-react'
 import { api } from './services/api'
 import Passport from './Passport'
 import Agents from './Agents'
@@ -16,6 +16,7 @@ const emptyFilters = { province: '', canton: '', category: '', subtype: '', diet
   openNow: false, minRating: '', priceLevel: '', order: '' }
 const pageSize = 24
 const emptyCatalog = { loading: true, provinces: [], cantons: [], glossary: [] }
+const categoryIcons = { '': Compass, nature: Trees, culture: Landmark, restaurant: Utensils, lodging: BedDouble }
 
 export default function App() {
   const [view, setView] = useState('inicio')
@@ -25,6 +26,7 @@ export default function App() {
   const [filters, setFilters] = useState(emptyFilters)
   const [limit, setLimit] = useState(pageSize)
   const [destination, setDestination] = useState('')
+  const filterDrawer = useRef(null)
 
   useEffect(() => {
     if (!token) return
@@ -81,7 +83,8 @@ export default function App() {
   const validServices = new Set(byCategory.flatMap((place) => place.services ?? []))
   const filtered = Boolean(province || canton || category || subtype || diet || cuisine || search ||
     evidence || hasHours || accessibility.length || services.length || entrance || withPhotos || openNow || minRating || priceLevel || order)
-  const advancedCount = [subtype, diet, cuisine, hasHours, evidence].filter(Boolean).length + accessibility.length + services.length
+  const advancedCount = [minRating, priceLevel, entrance, subtype, diet, cuisine, hasHours, evidence].filter(Boolean).length
+    + accessibility.length + services.length
   const currentProvince = catalog.provinces.find((item) => item.slug === province)
   const googleQuery = [
     search.trim(), subtype || (!search.trim() && categories[category]),
@@ -96,6 +99,11 @@ export default function App() {
   function changeFilters(updates) {
     setFilters((current) => ({ ...current, ...updates }))
     setLimit(pageSize)
+  }
+
+  function selectCategory(next) {
+    changeFilters({ category: next, subtype: '', services: [],
+      ...(next && next !== 'restaurant' ? { diet: '', cuisine: '' } : {}) })
   }
   const catalogStatus = catalog.loading ? <p role="status">Cargando el catálogo…</p> : catalog.error ? (
     <div className="panel" role="alert"><p>{catalog.error}</p><button onClick={() => {
@@ -128,30 +136,46 @@ export default function App() {
           {catalogStatus ?? <>
             <section className="discovery-filters" aria-label="Filtros de lugares">
             <div className="filter-bar filter-primary">
-              <label className="search-field"><Search size={19} aria-hidden="true" />
+              <label className="search-field"><Search size={22} aria-hidden="true" />
                 <input aria-label="Buscar lugares" maxLength={180} placeholder="Ej. comida coreana en Heredia" value={search} onChange={(event) => changeFilters({ search: event.target.value })} />
+                {search && <button type="button" className="search-clear" aria-label="Borrar búsqueda" onClick={() => changeFilters({ search: '' })}><X size={17} /></button>}
               </label>
-              <label className="province-field">Provincia
+              <label className="province-field filter-region"><span><MapPin size={14} /> Provincia</span>
                 <select value={province} onChange={(event) => changeFilters({ province: event.target.value, canton: '' })}>
                   <option value="">Todas las provincias</option>
                   {catalog.provinces.map((item) => <option value={item.slug} key={item.slug}>{item.name}</option>)}
                 </select>
               </label>
-              <label className="province-field">Cantón<select value={canton} disabled={!province} onChange={(event) => changeFilters({ canton: event.target.value })}>
+              <label className="province-field filter-region"><span> Cantón</span><select value={canton} disabled={!province} onChange={(event) => changeFilters({ canton: event.target.value })}>
                 <option value="">Todos los cantones</option>{catalog.cantons.filter((item) => item.province_slug === province).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
               </select></label>
-              <label className="province-field">Tipo de lugar<select value={category} onChange={(event) => {
-                const next = event.target.value
-                changeFilters({ category: next, subtype: '', services: [], ...(next && next !== 'restaurant' ? { diet: '', cuisine: '' } : {}) })
-              }}>
-                <option value="">Todos los tipos</option>{Object.entries(categories).map(([key, name]) => <option key={key} value={key}>{name}</option>)}
-              </select></label>
+              <button className="filter-trigger" type="button" onClick={() => filterDrawer.current?.showModal()}>
+                <SlidersHorizontal size={18} /> Filtros{advancedCount > 0 && <span>{advancedCount}</span>}
+              </button>
             </div>
-            <div className="filter-quick">
-              <label className="province-field">Orden<select value={order} onChange={(event) => changeFilters({ order: event.target.value })}>
+            <div className="category-tabs" aria-label="Tipo de lugar">
+              {[['', 'Todos'], ...Object.entries(categories)].map(([key, name]) => {
+                const Icon = categoryIcons[key]
+                return <button key={key} type="button" aria-pressed={category === key} onClick={() => selectCategory(key)}>
+                  <Icon size={16} aria-hidden="true" />{name}
+                </button>
+              })}
+            </div>
+            <div className="filter-toggles">
+              <label><input type="checkbox" checked={withPhotos} onChange={(event) => changeFilters({ withPhotos: event.target.checked })} /><Camera size={16} aria-hidden="true" /> Con fotos</label>
+              <label><input type="checkbox" checked={openNow} onChange={(event) => changeFilters({ openNow: event.target.checked })} /><Clock3 size={16} aria-hidden="true" /> Abierto ahora</label>
+              <label className="filter-sort">Orden<select value={order} onChange={(event) => changeFilters({ order: event.target.value })}>
                 <option value="">Por relevancia</option><option value="recommended">Más recomendados</option>
                 <option value="rating">Mayor calificación</option><option value="reviews">Más valoraciones</option>
               </select></label>
+              {filtered && <button className="filter-reset" onClick={() => changeFilters(emptyFilters)}>Limpiar filtros</button>}
+            </div>
+            <dialog className="filter-drawer" ref={filterDrawer} aria-labelledby="filter-drawer-title">
+              <div className="filter-drawer-header"><h2 id="filter-drawer-title">Filtros de búsqueda</h2>
+                <button type="button" className="search-clear" aria-label="Cerrar filtros" onClick={() => filterDrawer.current?.close()}><X size={22} /></button>
+              </div>
+              <div className="filter-drawer-body">
+              <div className="filter-quick">
               <label className="province-field">Estrellas<select value={minRating} onChange={(event) => changeFilters({ minRating: event.target.value })}>
                 <option value="">Cualquier calificación</option>
                 {[3, 3.5, 4, 4.5, 5].map((value) => <option key={value} value={value}>{value.toLocaleString('es-CR')} de 5 o más</option>)}
@@ -164,12 +188,6 @@ export default function App() {
                 <option value="">Cualquier entrada</option><option value="free">Entrada gratuita</option><option value="paid">Entrada de pago</option>
               </select></label>
             </div>
-            <div className="filter-toggles">
-              <label><input type="checkbox" checked={withPhotos} onChange={(event) => changeFilters({ withPhotos: event.target.checked })} /> Con fotos</label>
-              <label><input type="checkbox" checked={openNow} onChange={(event) => changeFilters({ openNow: event.target.checked })} /> Abierto ahora</label>
-              {filtered && <button className="secondary" onClick={() => changeFilters(emptyFilters)}>Limpiar filtros</button>}
-            </div>
-            <details className="advanced-filters"><summary>Más filtros{advancedCount > 0 && <span>{advancedCount} activos</span>}</summary>
               <div className="filter-bar filter-advanced-inputs">
               <label className="province-field">Subtipo<select value={subtype} onChange={(event) => changeFilters({ subtype: event.target.value })}>
                 <option value="">Todos los subtipos</option>
@@ -205,7 +223,12 @@ export default function App() {
                 <option value="">Todas las fuentes</option><option value="editorial">Catálogo editorial</option><option value="openstreetmap">OpenStreetMap</option>
               </select></label>
             </fieldset>}
-            </details>
+              </div>
+              <div className="filter-drawer-actions">
+                <button className="filter-reset" onClick={() => changeFilters(emptyFilters)}>Limpiar filtros</button>
+                <button onClick={() => filterDrawer.current?.close()}>Ver resultados</button>
+              </div>
+            </dialog>
             </section>
             {currentProvince && <aside className="field-note"><strong>Dato de {currentProvince.name}</strong>
               <p>{currentProvince.curiosity}</p><a href={currentProvince.source_url} target="_blank" rel="noreferrer">Consultar fuente <ArrowUpRight size={14} /></a>
@@ -213,7 +236,7 @@ export default function App() {
             {!filtered && <section className="discovery-carousel"><h2>Postales de Costa Rica</h2><Carousel /></section>}
             {googleSearchActive && <GooglePlaces key={JSON.stringify([googleQuery, minRating, priceLevel, withPhotos, openNow])}
               token={token} query={googleQuery} minRating={minRating} priceLevel={priceLevel}
-              withPhotos={withPhotos} openNow={openNow} order={order}
+              withPhotos={withPhotos} openNow={openNow} order={order} category={category}
               hasLocalFilters={Boolean(accessibility.length || services.length || hasHours || evidence || entrance)} />}
             {Boolean(minRating || priceLevel || openNow || order) && <p className="place-access">Las estrellas, los precios, la apertura en tiempo real y el orden por valoraciones se aplican a los resultados en vivo.</p>}
             <div className="section-title"><h2>Catálogo RUTEA</h2><span role="status">{visiblePlaces.length} {visiblePlaces.length === 1 ? 'lugar' : 'lugares'}</span></div>

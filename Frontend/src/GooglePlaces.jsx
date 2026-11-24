@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowUpRight, MapPin, Star } from 'lucide-react'
 import { api } from './services/api'
 import { directionsUrl, googlePriceLabels } from './utils/catalog-filters'
+import { ReferencePhoto } from './PlaceMedia'
 
 function Credit({ author }) {
   const name = author?.displayName
@@ -10,9 +12,9 @@ function Credit({ author }) {
     : name
 }
 
-function GooglePhoto({ photo, name }) {
+function GooglePhoto({ photo, name, category, query }) {
   const [failed, setFailed] = useState(false)
-  if (!photo || failed) return null
+  if (!photo || failed) return <ReferencePhoto name={name} category={category} query={query} />
   return <figure className="google-photo">
     <img src={photo.url} alt={name ?? 'Foto del lugar'} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
     {Boolean(photo.authors.length) && <figcaption>Foto de {photo.authors.map((author, index) => (
@@ -23,8 +25,8 @@ function GooglePhoto({ photo, name }) {
 
 function Rating({ place }) {
   if (place.rating == null) return null
-  return <p><strong>{place.rating.toLocaleString('es-CR')} / 5</strong>
-    {place.userRatingCount != null && ` · ${place.userRatingCount.toLocaleString('es-CR')} valoraciones`}</p>
+  return <p className="result-rating"><Star size={15} fill="currentColor" aria-hidden="true" /><strong>{place.rating.toLocaleString('es-CR')}</strong>
+    {place.userRatingCount != null && <span>{place.userRatingCount.toLocaleString('es-CR')} valoraciones</span>}</p>
 }
 
 function formatPrice(money) {
@@ -63,12 +65,19 @@ function Attributions({ place }) {
   </p>)
 }
 
-export default function GooglePlaces({ query, token, hasLocalFilters, minRating, priceLevel, withPhotos, openNow, order }) {
+export default function GooglePlaces({ query, token, hasLocalFilters, minRating, priceLevel, withPhotos, openNow, order, category }) {
   const [places, setPlaces] = useState(null)
   const [details, setDetails] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
+  const detailPanel = useRef(null)
+
+  useEffect(() => {
+    if (!details || !detailPanel.current) return
+    detailPanel.current.scrollIntoView({ block: 'nearest' })
+    detailPanel.current.focus({ preventScroll: true })
+  }, [details])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -112,27 +121,30 @@ export default function GooglePlaces({ query, token, hasLocalFilters, minRating,
     </div>}
     {places?.length === 0 && <p role="status">Google Maps no encontró resultados.</p>}
     {Boolean(places?.length) && <ul className="google-list">{orderPlaces(places, order).map((place) => (
-      <li key={place.id}>
-        <GooglePhoto photo={place.photo} name={place.displayName?.text} />
-        <strong>{place.displayName?.text}</strong>
-        <p>{place.formattedAddress}</p>
-        <Rating place={place} />
-        <PriceAndHours place={place} />
-        <Attributions place={place} />
-        <button className="secondary" disabled={busy} onClick={() => openDetails(place.id)}>Ver ficha de {place.displayName?.text ?? 'este lugar'}</button>
+      <li className="google-card" key={place.id}>
+        <GooglePhoto photo={place.photo} name={place.displayName?.text} category={category} query={query} />
+        <div className="google-card-content">
+          <h3>{place.displayName?.text}</h3>
+          <Rating place={place} />
+          {place.formattedAddress && <p className="result-address"><MapPin size={15} aria-hidden="true" />{place.formattedAddress}</p>}
+          <PriceAndHours place={place} />
+          <Attributions place={place} />
+          <button className="result-action" aria-label={`Ver ficha de ${place.displayName?.text ?? 'este lugar'}`}
+            disabled={busy} onClick={() => openDetails(place.id)}>Ver ficha <ArrowUpRight size={16} /></button>
+        </div>
       </li>
     ))}</ul>}
-    {details && <Details {...details} />}
+    {details && <div ref={detailPanel} tabIndex={-1}><Details {...details} category={category} query={query} /></div>}
   </section>
 }
 
-function Details({ place, photo }) {
+function Details({ place, photo, category, query }) {
   return <article className="google-details" aria-label="Ficha de Google Maps">
     <h3>{place.displayName?.text}</h3>
     <p>{place.formattedAddress}</p>
     <Rating place={place} />
     <PriceAndHours place={place} />
-    <GooglePhoto key={place.id} photo={photo} name={place.displayName?.text} />
+    <GooglePhoto key={place.id} photo={photo} name={place.displayName?.text} category={category} query={query} />
     {place.nationalPhoneNumber && <p>Teléfono {place.nationalPhoneNumber}</p>}
     {Boolean(place.regularOpeningHours?.weekdayDescriptions?.length) && <details><summary>Horarios</summary><ul>
       {place.regularOpeningHours.weekdayDescriptions.map((day) => <li key={day}>{day}</li>)}

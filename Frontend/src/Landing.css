@@ -49,7 +49,9 @@
 .place-photo, .place-photo-placeholder { width: 100%; margin: 0 0 15px; overflow: hidden; border-radius: 8px; }
 .place-photo img { display: block; width: 100%; height: 175px; object-fit: cover; }
 .place-photo figcaption { padding: 4px 6px; background: #eee8d4; font-size: .73rem; }
-.place-photo-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 103px; padding: 10px; background: #e2ebd8; color: #2b5342; text-align: center; }
+.place-photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 5px; background: #eaf0e5; color: #2b5342; text-align: center; }
+.place-photo-placeholder .reference-photo img { height: 160px; }
+.place-photo-placeholder .photo-lookup { display: inline-flex; align-items: center; gap: 6px; padding: .3rem .6rem; margin: 3px 0 5px; background: transparent; color: #245842; font-size: .8rem; }
 .place-photo-restaurant { background: #f2e2c8; }
 .place-photo-culture { background: #e6e5d8; }
 .place-photo-lodging { background: #dcebea; }
