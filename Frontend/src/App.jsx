@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpRight, Compass, Search } from 'lucide-react'
+import { ArrowUpRight, Search } from 'lucide-react'
 import { api } from './services/api'
 import Passport from './Passport'
 import Agents from './Agents'
 import GooglePlaces from './GooglePlaces'
 import PlaceCard from './PlaceCard'
+import Landing from './Landing'
 import logo from './assets/rutea-logo.svg'
 import { accessibilityLabels, categories, cuisineLabel, filterPlaces, serviceLabels } from './utils/catalog-filters'
 import './App.css'
+import './Landing.css'
 
 const emptyFilters = { province: '', canton: '', category: '', subtype: '', diet: '', cuisine: '', search: '',
   accessibility: [], services: [], hasHours: false, evidence: '' }
 const pageSize = 24
+const emptyCatalog = { loading: true, provinces: [], cantons: [], glossary: [] }
 
 export default function App() {
   const [view, setView] = useState('inicio')
   const [token, setToken] = useState(() => sessionStorage.getItem('rutea-session') ?? '')
-  const [catalog, setCatalog] = useState({ loading: true, provinces: [], cantons: [], glossary: [] })
+  const [catalog, setCatalog] = useState(emptyCatalog)
   const [retry, setRetry] = useState(0)
   const [filters, setFilters] = useState(emptyFilters)
   const [limit, setLimit] = useState(pageSize)
@@ -24,28 +27,42 @@ export default function App() {
   const [showGoogle, setShowGoogle] = useState(false)
 
   useEffect(() => {
+    if (!token) return
     const controller = new AbortController()
-    const options = { signal: controller.signal }
+    const options = { token, signal: controller.signal }
     async function loadCatalog() {
       try {
         const [provinces, cantons, glossary] = await Promise.all(
           ['provinces', 'cantons', 'glossary'].map((path) => api(`catalog/${path}`, options)),
         )
         const details = await Promise.all(provinces.map(({ slug }) => api(`catalog/provinces/${slug}`, options)))
-        setCatalog({ loading: false, provinces: details, cantons, glossary })
+        if (!controller.signal.aborted) setCatalog({ loading: false, provinces: details, cantons, glossary })
       } catch (error) {
         if (!controller.signal.aborted) setCatalog({ loading: false, error: error.message, provinces: [], cantons: [], glossary: [] })
       }
     }
     loadCatalog()
     return () => controller.abort()
-  }, [retry])
+  }, [token, retry])
 
   function updateSession(value) {
     if (value) sessionStorage.setItem('rutea-session', value)
     else sessionStorage.removeItem('rutea-session')
     setToken(value)
+    setCatalog(emptyCatalog)
+    setDestination('')
+    setShowGoogle(false)
+    setFilters(emptyFilters)
+    setLimit(pageSize)
+    setView(value ? 'explorar' : 'inicio')
+    window.scrollTo({ top: 0 })
   }
+
+  useEffect(() => {
+    function expired() { updateSession('') }
+    window.addEventListener('rutea-session-expired', expired)
+    return () => window.removeEventListener('rutea-session-expired', expired)
+  }, [])
 
   function navigate(next) {
     setView(next)
@@ -77,6 +94,8 @@ export default function App() {
     }}>Reintentar</button></div>
   ) : null
 
+  if (!token) return <Landing onLogin={updateSession} />
+
   return (
     <>
       <header className="site-header">
@@ -89,26 +108,11 @@ export default function App() {
               <button key={key} aria-current={view === key ? 'page' : undefined} onClick={() => navigate(key)}>{label}</button>
             ))}
           </nav>
-          {token && <button className="quiet" onClick={() => { updateSession(''); setDestination('') }}>Cerrar sesión</button>}
+          <button className="quiet" onClick={() => updateSession('')}>Cerrar sesión</button>
         </div>
       </header>
       <main className="shell">
-        {view === 'inicio' && <>
-          <section className="hero">
-            <div>
-              <p className="eyebrow">Bitácora de Costa Rica</p>
-              <h1>¿Qué es RUTEA?</h1>
-              <p>Una guía para descubrir Costa Rica por provincia y cantón, conocer la historia de cada visita y guardar tu recorrido en un pasaporte personal.</p>
-              <button className="secondary hero-action" onClick={() => navigate('explorar')}>Buscar adónde ir</button>
-            </div>
-            <Compass className="hero-compass" size={180} strokeWidth={0.7} aria-hidden="true" />
-          </section>
-          <div className="card-grid">
-            <section className="panel"><h2>Encuentra tu próxima parada</h2><p>Busca naturaleza, cultura o restaurantes con el tipo de menú que necesitas.</p><button onClick={() => navigate('explorar')}>Abrir catálogo</button></section>
-            <section className="panel"><h2>Conoce cómo hablamos</h2><p>Lee costarriqueñismos, ejemplos y datos culturales con sus fuentes.</p><button onClick={() => navigate('glosario')}>Ver glosario</button></section>
-            <section className="panel"><h2>Guarda tu recorrido</h2><p>Registra visitas y consulta tus sellos, provincias recorridas e insignias.</p><button onClick={() => navigate('pasaporte')}>Abrir mi pasaporte</button></section>
-          </div>
-        </>}
+        {view === 'inicio' && <Landing onExplore={() => navigate('explorar')} />}
         {view === 'explorar' && <>
           <div className="page-heading"><h1>Adónde ir</h1></div>
           {catalogStatus ?? <>
@@ -174,12 +178,12 @@ export default function App() {
                 {showGoogle ? 'Cerrar búsqueda en Google' : 'Buscar también en Google'}
               </button>
             </div>
-            {showGoogle && <GooglePlaces initialQuery={search || [
+            {showGoogle && <GooglePlaces token={token} initialQuery={search || [
               cuisine ? `comida ${cuisineLabel(cuisine)}` : categories[category], cantonNames.get(Number(canton)), currentProvince?.name,
             ].filter(Boolean).join(' ')} />}
             {visiblePlaces.length === 0 && <p>El catálogo aún no tiene lugares que cumplan todos estos filtros.</p>}
             <div className="card-grid">{visiblePlaces.slice(0, limit).map((place) => (
-              <PlaceCard key={place.slug} place={place} canton={cantonNames.get(place.canton_code)}
+              <PlaceCard key={place.slug} place={place} token={token} canton={cantonNames.get(place.canton_code)}
                 onVisit={() => { setDestination(place.slug); navigate('pasaporte') }} />
             ))}</div>
             {visiblePlaces.length > limit && <button className="secondary load-more" onClick={() => setLimit((count) => count + pageSize)}>Cargar más lugares</button>}

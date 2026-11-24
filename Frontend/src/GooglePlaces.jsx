@@ -10,7 +10,7 @@ function Credit({ author }) {
     : name
 }
 
-export default function GooglePlaces({ initialQuery }) {
+export default function GooglePlaces({ initialQuery, token }) {
   const [query, setQuery] = useState(initialQuery)
   const [places, setPlaces] = useState(null)
   const [details, setDetails] = useState(null)
@@ -20,7 +20,7 @@ export default function GooglePlaces({ initialQuery }) {
   async function run(path, options, onSuccess) {
     setBusy(true)
     setError('')
-    try { onSuccess(await api(path, options)) }
+    try { onSuccess(await api(path, { ...options, token })) }
     catch (failure) { setError(failure.message) }
     finally { setBusy(false) }
   }

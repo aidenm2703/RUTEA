@@ -36,7 +36,19 @@ function providerError(response, error) {
   return response.status(502).json({ error: 'Google Places no está disponible. Revisa la configuración o vuelve a intentarlo.' });
 }
 
-function createGooglePlacesRouter(key) {
+const normalize = (value) => value.normalize('NFD').replace(/\p{Diacritic}/gu, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+async function getPhoto(key, id, photos) {
+  const first = photos.find(({ name }) => typeof name === 'string' && photoNamePattern.test(name)
+    && name.startsWith(`places/${id}/photos/`));
+  if (!first) return null;
+  const { photoUri } = await requestGoogle(key, `${first.name}/media?maxWidthPx=720&skipHttpRedirect=true`);
+  if (typeof photoUri !== 'string' || !photoUri.startsWith('https://')) return null;
+  return { url: photoUri, authors: first.authorAttributions ?? [] };
+}
+
+function createGooglePlacesRouter(key, database) {
   const router = Router();
   router.use((_request, response, next) => {
     response.set('Cache-Control', 'no-store');
@@ -73,24 +85,43 @@ function createGooglePlacesRouter(key) {
     }
   });
 
+  router.get('/catalog-photo/:slug', async (request, response) => {
+    const { slug } = request.params;
+    if (!/^[a-z0-9-]{1,130}$/.test(slug)) return response.status(400).json({ error: 'Lugar inválido.' });
+    const { rows: [place] } = await database.query(`
+      select p.name, provinces.name as province, c.name as canton
+      from rutea.places p
+      join rutea.provinces provinces on provinces.slug = p.province_slug
+      left join rutea.cantons c on c.code = p.canton_code
+      where p.slug = $1
+    `, [slug]);
+    if (!place) return response.status(404).json({ error: 'Lugar no encontrado.' });
+    try {
+      const { places = [] } = await requestGoogle(key, 'places:searchText', {
+        fields: 'places.id,places.displayName,places.formattedAddress,places.photos',
+        body: {
+          textQuery: [place.name, place.canton, place.province, 'Costa Rica'].filter(Boolean).join(', '),
+          languageCode: 'es', regionCode: 'CR', pageSize: 5,
+        },
+      });
+      const name = normalize(place.name);
+      const matched = places.filter((candidate) => normalize(candidate.displayName?.text ?? '') === name
+        && normalize(candidate.formattedAddress ?? '').includes(normalize(place.canton || place.province)));
+      const match = matched.length === 1 ? matched[0] : null;
+      return response.json({ photo: match ? await getPhoto(key, match.id, match.photos ?? []) : null });
+    } catch (error) {
+      return providerError(response, error);
+    }
+  });
+
   router.get('/:id', async (request, response) => {
     const { id } = request.params;
     if (!placeIdPattern.test(id)) return response.status(400).json({ error: 'Identificador de lugar inválido.' });
     try {
       const { photos = [], ...place } = await requestGoogle(key, `places/${id}?languageCode=es&regionCode=CR`, { fields: detailFields });
-      const firstPhoto = photos.find(({ name }) => typeof name === 'string' && photoNamePattern.test(name)
-        && name.startsWith(`places/${id}/photos/`));
       let photo;
-      if (firstPhoto) {
-        try {
-          const { photoUri } = await requestGoogle(key, `${firstPhoto.name}/media?maxWidthPx=720&skipHttpRedirect=true`);
-          if (typeof photoUri === 'string' && photoUri.startsWith('https://')) {
-            photo = { url: photoUri, authors: firstPhoto.authorAttributions ?? [] };
-          }
-        } catch {
-          // A photo failure should not hide the place details.
-        }
-      }
+      try { photo = await getPhoto(key, id, photos); }
+      catch { /* Preserve the place details when its photo request fails. */ }
       return response.json({ place, photo });
     } catch (error) {
       return providerError(response, error);

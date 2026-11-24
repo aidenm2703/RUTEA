@@ -5,18 +5,17 @@ const { forecastFor } = require('../services/weather');
 const { findProvince, listProvinces, listCantons } = require('../repositories/catalog.repository');
 const { getPassport } = require('../repositories/passport.repository');
 
-function createAgentsRouter(database, authenticate, gemini) {
+function createAgentsRouter(database, gemini) {
   const router = Router();
-  const available = Boolean(authenticate && gemini?.key && gemini?.model);
+  const available = Boolean(gemini?.key && gemini?.model);
   router.get('/', (_request, response) => response.json({
     available,
     agents: agents.map(({ id, name, audience, description }) => ({ id, name, audience, description, example: examples[id] })),
   }));
-  if (!authenticate) return router;
-  router.get('/permissions', authenticate, (request, response) => {
+  router.get('/permissions', (request, response) => {
     response.json({ allowed: agents.filter((agent) => canRun(agent, request.user.role)).map(({ id }) => id) });
   });
-  router.post('/:id', authenticate, rateLimit({ windowMs: 60000, limit: 6,
+  router.post('/:id', rateLimit({ windowMs: 60000, limit: 6,
     message: { error: 'Espera un minuto antes de realizar más consultas.' } }), async (request, response) => {
     const agent = agents.find((item) => item.id === request.params.id);
     if (!agent) return response.status(404).json({ error: 'Agente no encontrado' });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, Compass } from 'lucide-react'
 import { api } from './services/api'
 
@@ -8,14 +8,21 @@ export default function Agents({ token, provinces, openPassport }) {
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
   const [allowed, setAllowed] = useState(null)
+  const panel = useRef(null)
 
   useEffect(() => {
     const controller = new AbortController()
-    api('agents', { signal: controller.signal }).then(setCatalog).catch((failure) => {
+    api('agents', { token, signal: controller.signal }).then(setCatalog).catch((failure) => {
       if (!controller.signal.aborted) setError(failure.message)
     })
     return () => controller.abort()
-  }, [retry])
+  }, [token, retry])
+
+  useEffect(() => {
+    if (!selected || !panel.current) return
+    panel.current.scrollIntoView({ block: 'nearest' })
+    panel.current.focus({ preventScroll: true })
+  }, [selected])
 
   useEffect(() => {
     if (!token) return
@@ -40,9 +47,9 @@ export default function Agents({ token, provinces, openPassport }) {
             <button className="secondary" aria-pressed={selected?.id === agent.id} onClick={() => setSelected(agent)}>Elegir {agent.name}</button>
           </article>)}
         </div>
-        {selected && <AgentForm key={selected.id} agent={selected} available={catalog.available}
+        {selected && <div className="agent-selection" tabIndex={-1} ref={panel} id="consulta-agente"><AgentForm key={selected.id} agent={selected} available={catalog.available}
           token={token} restricted={Boolean(allowed?.token === token && !allowed.ids.includes(selected.id))}
-          provinces={provinces} openPassport={openPassport} />}
+          provinces={provinces} openPassport={openPassport} /></div>}
       </div>
     </>}
   </>
