@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from './services/api'
+import { directionsUrl } from './utils/catalog-filters'
 
 function Credit({ author }) {
   const name = author?.displayName
@@ -71,6 +72,8 @@ function Details({ place, photo }) {
       {place.regularOpeningHours.weekdayDescriptions.map((day) => <li key={day}>{day}</li>)}
     </ul></details>}
     {place.googleMapsUri?.startsWith('https://') && <p><a href={place.googleMapsUri} target="_blank" rel="noreferrer">Abrir en Google Maps</a></p>}
+    {(place.formattedAddress || place.displayName?.text) && <p><a target="_blank" rel="noreferrer"
+      href={directionsUrl(place.formattedAddress || place.displayName.text, place.id)}>Cómo llegar</a></p>}
     {place.websiteUri?.startsWith('https://') && <p><a href={place.websiteUri} target="_blank" rel="noreferrer">Sitio del lugar</a></p>}
     {Boolean(place.reviews?.length) && <details><summary>Reseñas destacadas de Google Maps</summary><ul>
       {place.reviews.map((review, index) => <li key={review.name ?? index}>

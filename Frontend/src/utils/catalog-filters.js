@@ -1,5 +1,10 @@
 export const categories = { nature: 'Naturaleza', culture: 'Cultura', restaurant: 'Restaurantes', lodging: 'Alojamiento' }
 export const menuLabels = { fully_vegan: '100 % vegano', vegan_options: 'Opciones veganas' }
+export const serviceLabels = {
+  outdoor: 'Mesas al aire libre', takeaway: 'Para llevar', delivery: 'Entrega a domicilio',
+  reservations: 'Reservas', wifi: 'Wi-Fi', parking: 'Estacionamiento',
+  dogs: 'Admite perros', camping: 'Camping', free: 'Entrada gratuita', paid: 'Entrada de pago',
+}
 export const accessibilityLabels = {
   ramp: 'Rampa para silla de ruedas',
   wheelchair: 'Acceso en silla de ruedas',
@@ -24,6 +29,12 @@ const cuisineAliases = {
 const normalize = (value) => value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
 export const cuisineLabel = (code) => cuisineNames[code] ?? code.replaceAll('_', ' ')
 
+export function directionsUrl(destination, placeId) {
+  const query = new URLSearchParams({ api: '1', destination })
+  if (placeId) query.set('destination_place_id', placeId)
+  return `https://www.google.com/maps/dir/?${query}`
+}
+
 export function filterPlaces(places, cantonNames, filters) {
   const words = normalize(filters.search).match(/[a-z0-9]+/g) ?? []
   const asksVegan = words.some((word) => /^vegan[oa]s?$/.test(word))
@@ -42,10 +53,14 @@ export function filterPlaces(places, cantonNames, filters) {
   return places.filter((item) => {
     const cuisines = item.cuisine_codes ?? []
     const accessibility = item.accessibility_features ?? []
-    const searchable = normalize(`${item.name} ${item.province} ${cantonNames.get(item.canton_code) ?? ''} ${item.visit_notes} ${categories[item.category] ?? ''}`)
+    const searchable = normalize(`${item.name} ${item.province} ${cantonNames.get(item.canton_code) ?? ''} ${item.visit_notes} ${item.subtype ?? ''} ${item.address ?? ''} ${categories[item.category] ?? ''}`)
     return (!filters.province || item.province_slug === filters.province)
       && (!filters.canton || Number(filters.canton) === item.canton_code)
       && (!filters.category || filters.category === item.category)
+      && (!filters.subtype || filters.subtype === item.subtype)
+      && (!filters.evidence || filters.evidence === item.evidence_kind)
+      && (!filters.hasHours || Boolean(item.hours))
+      && (filters.services ?? []).every((service) => item.services?.includes(service))
       && (!asksRestaurant || item.category === 'restaurant')
       && (!asksLodging || item.category === 'lodging')
       && (!asksVegan || Boolean(item.vegan_menu)) && (!requestedMenu || item.vegan_menu === requestedMenu)

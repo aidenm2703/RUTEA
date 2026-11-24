@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpRight, Compass, MapPin, Search } from 'lucide-react'
+import { ArrowUpRight, Compass, Search } from 'lucide-react'
 import { api } from './services/api'
 import Passport from './Passport'
 import Agents from './Agents'
 import GooglePlaces from './GooglePlaces'
+import PlaceCard from './PlaceCard'
 import logo from './assets/rutea-logo.svg'
-import { accessibilityLabels, categories, cuisineLabel, filterPlaces, menuLabels } from './utils/catalog-filters'
+import { accessibilityLabels, categories, cuisineLabel, filterPlaces, serviceLabels } from './utils/catalog-filters'
 import './App.css'
 
-const emptyFilters = { province: '', canton: '', category: '', diet: '', cuisine: '', search: '', accessibility: [] }
+const emptyFilters = { province: '', canton: '', category: '', subtype: '', diet: '', cuisine: '', search: '',
+  accessibility: [], services: [], hasHours: false, evidence: '' }
 const pageSize = 24
 
 export default function App() {
@@ -52,11 +54,16 @@ export default function App() {
 
   const places = catalog.provinces.flatMap((item) => item.places.map((place) => ({ ...place, province: item.name })))
   const cantonNames = new Map(catalog.cantons.map(({ code, name }) => [code, name]))
-  const { province, canton, category, diet, cuisine, search, accessibility } = filters
+  const { province, canton, category, subtype, diet, cuisine, search, accessibility, services, hasHours, evidence } = filters
   const cuisines = [...new Set(places.flatMap((item) => item.cuisine_codes ?? []))]
     .sort((a, b) => cuisineLabel(a).localeCompare(cuisineLabel(b), 'es'))
   const visiblePlaces = filterPlaces(places, cantonNames, filters)
-  const filtered = Boolean(province || canton || category || diet || cuisine || search || accessibility.length)
+  const byCategory = places.filter((place) => !category || place.category === category)
+  const subtypes = [...new Set(byCategory.map((place) => place.subtype).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'es'))
+  const validServices = new Set(byCategory.flatMap((place) => place.services ?? []))
+  const filtered = Boolean(province || canton || category || subtype || diet || cuisine || search ||
+    evidence || hasHours || accessibility.length || services.length)
   const currentProvince = catalog.provinces.find((item) => item.slug === province)
 
   function changeFilters(updates) {
@@ -120,9 +127,13 @@ export default function App() {
               </select></label>
               <label className="province-field">Tipo de lugar<select value={category} onChange={(event) => {
                 const next = event.target.value
-                changeFilters({ category: next, ...(next && next !== 'restaurant' ? { diet: '', cuisine: '' } : {}) })
+                changeFilters({ category: next, subtype: '', services: [], ...(next && next !== 'restaurant' ? { diet: '', cuisine: '' } : {}) })
               }}>
                 <option value="">Todos los tipos</option>{Object.entries(categories).map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+              </select></label>
+              <label className="province-field">Subtipo<select value={subtype} onChange={(event) => changeFilters({ subtype: event.target.value })}>
+                <option value="">Todos los subtipos</option>
+                {subtypes.map((item) => <option key={item} value={item}>{item}</option>)}
               </select></label>
               {(!category || category === 'restaurant') && <>
                 <label className="province-field">Menú<select value={diet} onChange={(event) => changeFilters({ diet: event.target.value })}>
@@ -144,6 +155,17 @@ export default function App() {
                 })} /> {label}
               </label>)}
             </fieldset>
+            {(validServices.size > 0 || places.some((place) => place.hours)) && <fieldset className="access-filters"><legend>Servicios y horarios</legend>
+              {Object.entries(serviceLabels).filter(([value]) => validServices.has(value)).map(([value, label]) => <label key={value}>
+                <input type="checkbox" checked={services.includes(value)} onChange={(event) => changeFilters({
+                  services: event.target.checked ? [...services, value] : services.filter((service) => value !== service),
+                })} /> {label}
+              </label>)}
+              <label><input type="checkbox" checked={hasHours} onChange={(event) => changeFilters({ hasHours: event.target.checked })} /> Con horario registrado</label>
+              <label className="source-filter">Fuente<select value={evidence} onChange={(event) => changeFilters({ evidence: event.target.value })}>
+                <option value="">Todas las fuentes</option><option value="editorial">Catálogo editorial</option><option value="openstreetmap">OpenStreetMap</option>
+              </select></label>
+            </fieldset>}
             {currentProvince && <aside className="field-note"><strong>Dato de {currentProvince.name}</strong>
               <p>{currentProvince.curiosity}</p><a href={currentProvince.source_url} target="_blank" rel="noreferrer">Consultar fuente <ArrowUpRight size={14} /></a>
             </aside>}
@@ -157,21 +179,8 @@ export default function App() {
             ].filter(Boolean).join(' ')} />}
             {visiblePlaces.length === 0 && <p>El catálogo aún no tiene lugares que cumplan todos estos filtros.</p>}
             <div className="card-grid">{visiblePlaces.slice(0, limit).map((place) => (
-              <article className="place-card panel" key={place.slug}>
-                <p className="eyebrow"><MapPin size={14} aria-hidden="true" />{[place.province, cantonNames.get(place.canton_code), categories[place.category]].filter(Boolean).join(' · ')}</p>
-                <h3>{place.name}</h3><p>{place.visit_notes}</p>
-                {place.vegan_menu && <p className="menu-label">{menuLabels[place.vegan_menu]}</p>}
-                {place.vegetarian_options && !place.vegan_menu && <p className="menu-label">Opciones vegetarianas</p>}
-                {Boolean(place.cuisine_codes?.length) && <p>Cocina: {place.cuisine_codes.map(cuisineLabel).join(', ')}</p>}
-                <p className="place-access">Accesibilidad: {place.accessibility_features?.length
-                  ? place.accessibility_features.map((key) => accessibilityLabels[key]).join(', ')
-                  : 'Sin información disponible'}</p>
-                {place.evidence_kind === 'openstreetmap' && <p className="place-access">Datos comunitarios de OpenStreetMap</p>}
-                <details><summary>Ubicación, alojamiento y fuentes</summary><ul>
-                  {place.links.map((link) => <li key={link.kind + link.url}><a href={link.url} target="_blank" rel="noreferrer">{link.label} <ArrowUpRight size={14} /></a></li>)}
-                </ul></details>
-                <button className="secondary" onClick={() => { setDestination(place.slug); navigate('pasaporte') }}>Registrar visita</button>
-              </article>
+              <PlaceCard key={place.slug} place={place} canton={cantonNames.get(place.canton_code)}
+                onVisit={() => { setDestination(place.slug); navigate('pasaporte') }} />
             ))}</div>
             {visiblePlaces.length > limit && <button className="secondary load-more" onClick={() => setLimit((count) => count + pageSize)}>Cargar más lugares</button>}
             <p className="osm-attribution">Datos cartográficos © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">colaboradores de OpenStreetMap</a>.</p>

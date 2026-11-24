@@ -41,6 +41,13 @@ input, select { min-width: 0; width: 100%; padding: .6rem .7rem; color: #193e37;
 .access-filters label { display: inline-flex; align-items: center; gap: 5px; }
 .access-filters input { width: 1rem; height: 1rem; accent-color: #1d5947; }
 .place-access, .osm-attribution { font-size: .85rem; color: #3c6753; }
+.place-address { color: #3c6753; }
+.place-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; width: 100%; }
+.directions-link { display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; background: #1d5947; color: #fffdf7; padding: .65rem .9rem; font-weight: 700; text-decoration: none; }
+.directions-link:hover { filter: brightness(1.13); }
+.place-map { width: 100%; height: 200px; border: 1px solid #b8b3a3; border-radius: 6px; }
+.access-filters .source-filter { display: flex; gap: 8px; flex-wrap: wrap; }
+.source-filter select { width: auto; max-width: 100%; }
 .load-more, .osm-attribution { margin-top: 16px; }
 .google-results { margin: 12px 0 20px; }
 .google-attribution { font-size: .82rem; color: #4c5651; font-weight: 700; }

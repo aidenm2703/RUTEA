@@ -24,6 +24,8 @@ Aplica después `database/catalogo-atributos.sql` y `database/catalogo-osm.sql` 
 
 El archivo `database/catalogo-osm.sql` contiene datos de los colaboradores de OpenStreetMap bajo [ODbL 1.0](https://www.openstreetmap.org/copyright), extraídos de [Geofabrik](https://download.geofabrik.de/central-america/costa-rica.html). Para generar un extracto nuevo usa Python con `osmium` y `shapely`, el PBF de Costa Rica y `python database/importar_catalogo_osm.py <extracto.osm.pbf> <salida.sql> --snapshot-date AAAA-MM-DD`. El generador exige cobertura de los 84 cantones y asigna fichas mediante los límites cantonales de OpenStreetMap. Revisa el resultado antes de aplicarlo a una base existente.
 
+Aplica `database/catalogo-detalles.sql` y después `database/catalogo-osm-detalles.sql` para habilitar subtipos, servicios, horarios, direcciones y coordenadas. Puedes reproducir el segundo archivo con el mismo PBF mediante `python database/enriquecer_catalogo_osm.py <extracto.osm.pbf> <salida.sql>`. Una coordenada de OpenStreetMap señala la ficha cartográfica y puede diferir de la entrada. Los filtros de servicio y horario incluyen las fichas que tienen datos registrados.
+
 | Método y ruta | Datos |
 | --- | --- |
 | `POST /api/auth/register` | `displayName`, `email`, `password` en modo demo. |
