@@ -85,6 +85,9 @@ function createAgentsRouter(database, authenticate, gemini) {
       'insert into rutea.ai_agent_runs (user_id, agent_slug, status, duration_ms) values ($1, $2, $3, $4)',
       [request.user.id, agent.id, failure ? 'error' : 'ok', Date.now() - started],
     );
+    if (failure?.name === 'TimeoutError') return response.status(504).json({
+      error: 'Gemini tardó demasiado en responder. Intenta de nuevo.',
+    });
     if (failure) return response.status(failure.status === 429 ? 429 : 502).json({
       error: failure.status === 429 ? 'Gemini alcanzó su cuota. Intenta más tarde.' : 'Gemini no pudo responder. Intenta de nuevo.',
     });
