@@ -2,18 +2,22 @@ const express = require('express');
 const { createCatalogRouter } = require('./routes/catalog.routes');
 const { createAuthRouter, createAuthentication } = require('./routes/auth.routes');
 const { createPassportRouter } = require('./routes/passport.routes');
+const { createAgentsRouter } = require('./routes/agents.routes');
 
-function createApp(database, { jwtSecret, allowRegistration = false } = {}) {
+function createApp(database, { jwtSecret, allowRegistration = false, gemini } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '16kb' }));
   app.get('/health', (_request, response) => response.json({ status: 'ok' }));
   app.use('/api/catalog', createCatalogRouter(database));
+  let authenticate;
   if (jwtSecret) {
     if (Buffer.byteLength(jwtSecret) < 32) throw new Error('JWT_SECRET debe tener al menos 32 bytes');
     app.use('/api/auth', createAuthRouter(database, jwtSecret, allowRegistration));
-    app.use('/api/me', createPassportRouter(database, createAuthentication(database, jwtSecret)));
+    authenticate = createAuthentication(database, jwtSecret);
+    app.use('/api/me', createPassportRouter(database, authenticate));
   }
+  app.use('/api/agents', createAgentsRouter(database, authenticate, gemini));
   app.use((_request, response) => response.status(404).json({ error: 'Ruta no encontrada' }));
   app.use((error, _request, response, _next) => {
     if (error.type === 'entity.parse.failed') return response.status(400).json({ error: 'JSON inválido' });

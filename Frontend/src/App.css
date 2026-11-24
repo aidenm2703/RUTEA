@@ -3,6 +3,7 @@
 .masthead { display: flex; gap: 26px; align-items: center; min-height: 78px; }
 .brand { display: flex; align-items: center; gap: 10px; text-align: left; font-weight: 800; letter-spacing: .13em; }
 .brand small { display: block; font-size: .69rem; font-weight: 400; letter-spacing: .03em; }
+.brand img { width: 48px; height: 48px; object-fit: contain; border-radius: 7px; background: #fff6e3; padding: 3px; }
 .masthead nav { display: flex; flex: 1; gap: 6px; flex-wrap: wrap; }
 button { border: 1px solid transparent; border-radius: 6px; background: #1d5947; color: #fffdf7; padding: .65rem .9rem; font-weight: 700; }
 button:hover:not(:disabled) { filter: brightness(1.13); }
@@ -18,6 +19,8 @@ h1 { font-size: clamp(2.6rem, 7vw, 5.05rem); margin-bottom: .24em; }
 h2 { font-size: clamp(1.55rem, 3.5vw, 2.2rem); }
 h3 { font-size: 1.25rem; }
 .hero p:last-child { margin: 0; max-width: 36rem; }
+.hero p { max-width: 36rem; }
+.hero-action { margin-top: 12px; }
 .eyebrow { display: flex; align-items: center; gap: 6px; font-size: .73rem; font-weight: 800; text-transform: uppercase; letter-spacing: .11em; color: #3c6753; }
 .hero .eyebrow, .passport-cover .eyebrow { color: #d5e4b8; }
 .page-heading { padding: 38px 0 20px; }
@@ -32,6 +35,11 @@ input, select { min-width: 0; width: 100%; padding: .6rem .7rem; color: #193e37;
 .panel { min-width: 0; border: 1px solid #e4d8c4; border-radius: 9px; background: #fffcf5; padding: clamp(16px, 3vw, 25px); }
 .place-card { display: flex; align-items: flex-start; flex-direction: column; border-top: 3px solid #73937a; }
 .place-card details { margin: auto 0 1rem; }
+.menu-label { border-radius: 4px; background: #dcead3; padding: 3px 8px; font-weight: 700; }
+.agent-layout { display: grid; gap: 16px; }
+.agent-card [aria-pressed="true"] { background: #c5dcb5; }
+.agent-answer { white-space: pre-wrap; overflow-wrap: anywhere; }
+textarea { font: inherit; color: inherit; background: #fffaf1; border: 1px solid #b8b3a3; border-radius: 5px; padding: .6rem .7rem; }
 summary { cursor: pointer; font-weight: 700; }
 .field-note { background: #eee3ca; border-left: 4px solid #95663b; padding: 12px 16px; margin: 0 0 20px; }
 .field-note p { margin: 0; }

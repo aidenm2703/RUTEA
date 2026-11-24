@@ -18,6 +18,8 @@ El enlace de mapa realiza una búsqueda por nombre. El enlace de alojamiento dir
 
 Después del esquema y el catálogo inicial, aplica `database/cantones.sql`, `database/catalogo-ampliacion.sql` y `database/pasaporte.sql`, en ese orden. Para habilitar las rutas personales, configura `JWT_SECRET` con al menos 32 bytes aleatorios. `ALLOW_DEMO_REGISTRATION=true` habilita el registro en una instancia de pruebas con datos ficticios.
 
+Después del pasaporte aplica `database/catalogo-filtros-agentes.sql`. Los lugares incluyen una categoría. El menú vegano distingue `fully_vegan` y `vegan_options`, con evidencia del operador enlazada en la ficha.
+
 | Método y ruta | Datos |
 | --- | --- |
 | `POST /api/auth/register` | `displayName`, `email`, `password` en modo demo. |
@@ -29,11 +31,26 @@ Después del esquema y el catálogo inicial, aplica `database/cantones.sql`, `da
 
 Envía el token en `Authorization: Bearer <accessToken>` para usar `/api/me`. El perfil guarda el origen a nivel de provincia y cantón. El historial es privado y las visitas son autorregistradas. Un registro repetido para el mismo destino y fecha devuelve el pasaporte existente. El progreso cuenta lugares, cantones y provincias distintos. Cada lugar aporta un sello con la fecha de la primera visita y las insignias se calculan con los umbrales de PostgreSQL.
 
+## Agentes Gemini
+
+Configura `GEMINI_API_KEY` y `GEMINI_MODEL` con un modelo que tenga habilitado `generateContent` en tu proyecto de Google AI Studio. `GET /api/agents` lista los ocho agentes e indica si el entorno está configurado. `POST /api/agents/:id` requiere una sesión JWT y recibe `prompt` y `provinceSlug` opcional. El backend incorpora fuentes del catálogo cuando se elige una provincia y conserva estado, autor y duración en `rutea.ai_agent_runs`. Las consultas y respuestas quedan fuera de la bitácora.
+
+| Agente | ID | Comportamiento actual |
+| --- | --- | --- |
+| Pregúntale a RUTEA | `preguntale` | Consulta el catálogo y el glosario de la provincia elegida. |
+| Planificador | `itinerario` | Propone paradas por cantón. Queda pendiente calcular distancias con PostGIS. |
+| Accesibilidad | `accesibilidad` | Resume la evidencia disponible e identifica información pendiente. |
+| Maleta y clima | `maleta` | Arma una lista con el pronóstico aportado por el usuario, si existe. |
+| Presupuesto | `presupuesto` | Organiza los gastos aportados y usa el tipo de cambio indicado. |
+| Moderación | `moderacion` | Sugiere una revisión para moderadores y administradores. |
+| Recuerdos | `recuerdos` | Redacta un diario con notas y visitas del titular. |
+| Privacidad | `privacidad` | Revisa textos de ejemplo para auditores y administradores. |
+
 ## Siguiente alcance
 
 1. Completar cuentas y roles con verificación y recuperación por correo, y consentimiento versionado.
 2. Catálogo editorial con accesibilidad documentada, favoritos, reseñas, moderación y gestión de establecimientos.
 3. Viajes, pasaporte, insignias, amistades y fotos privadas en Supabase Storage.
-4. Ocho agentes con Gemini, fuentes del catálogo y bitácora, y los flujos n8n de bienvenida, tipo de cambio y eliminación.
+4. Completar distancias PostGIS, pronóstico y BCCR para los agentes, y los flujos n8n de bienvenida, tipo de cambio y eliminación.
 
 Registra cada actualización en la rama `Aiden` con un commit que describa el cambio.
